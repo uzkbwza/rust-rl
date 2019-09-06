@@ -1,0 +1,18 @@
+[package]
+name = "specsrl"
+version = "0.1.0"
+authors = ["Ian Sly <iansly@protonmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tcod = "0.15.0"
+specs = "0.15.0"
+specs-derive = "0.4.0"
+shrev = "1.1.1"
+shred = "0.9.2"
+shred-derive = "0.6.1"
+
+[features]
+default = ["specs/nightly", "specs/specs-derive"]
