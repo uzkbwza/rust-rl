@@ -1,7 +1,9 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
+use crate::map::EntityMap;
+use crate::components::{Position, Collidable};
 
-use crate::components::*;
+
 // use crate::systems::control::{CommandEvent};
 
 // remember that commands are *requesting* an action, and events
@@ -16,6 +18,7 @@ pub enum Dir {
     SW,
     NE,
     SE,
+    Nowhere,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -37,16 +40,16 @@ impl MoveCommand {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct MoveEvent {
-    entity: Entity,
-    start_x: i32,
-    start_y: i32,
-    dest_x: i32,
-    dest_y: i32,
+    pub entity: Entity,
+    pub start_x: i32,
+    pub start_y: i32,
+    pub dest_x: i32,
+    pub dest_y: i32,
 }
 
 
 impl MoveEvent {
-    pub fn _new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
+    pub fn new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
         MoveEvent {
             entity,
             start_x,
@@ -83,6 +86,7 @@ pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
             Dir::NE => (1, -1),
             Dir::SW => (-1, 1),
             Dir::SE => (1, 1),
+            Dir::Nowhere => (0, 0),
         }
 }
 
@@ -96,12 +100,38 @@ impl Movement {
             move_command_reader: None, 
         }
     }
+
+    fn move_position(entity: Entity, position: &mut Position, move_command: &MoveCommand) -> MoveEvent {
+        let start_x = position.x;
+        let start_y = position.y;
+        position.x += move_command.dx;
+        position.y += move_command.dy;
+        if position.x >= crate::SCREEN_WIDTH {
+            position.x = 0;
+        } else if position.x <= -1 {
+            position.x = crate::SCREEN_WIDTH - 1;
+        }
+        if position.y >= crate::SCREEN_HEIGHT {
+            position.y = 0;
+        } else if position.y <= -1 {
+            position.y = crate::SCREEN_HEIGHT - 1;
+        }
+        MoveEvent::new(
+            entity,
+            start_x,
+            start_y,
+            position.x,
+            position.y,
+        )
+    }
 }
 
 #[derive(SystemData)]
 pub struct MovementSystemData<'a> {
     pub entities: Entities<'a>,
     pub positions: WriteStorage<'a, Position>,
+    pub collidables: ReadStorage<'a, Collidable>,
+    pub entity_map: ReadExpect<'a, EntityMap>,
 
     // read channels
     pub move_command_channel: Read<'a, EventChannel<MoveCommand>>,
@@ -109,7 +139,6 @@ pub struct MovementSystemData<'a> {
     // write channels
     pub move_event_channel: Write<'a, EventChannel<MoveEvent>>,
     pub collide_event_channel: Write<'a, EventChannel<CollisionEvent>>,
-    
 }
 
 impl<'a> System<'a> for Movement {
@@ -120,11 +149,14 @@ impl<'a> System<'a> for Movement {
             .read(self.move_command_reader
             .as_mut()
             .unwrap());
-        for command in move_commands {
-            for (pos, entity) in (&mut data.positions, &data.entities).join() {
-                if command.entity == entity {
-                    pos.x += command.dx;
-                    pos.y += command.dy;
+        
+        for move_command in move_commands {
+            let ent = move_command.entity;
+            if let Some(pos) = data.positions.get_mut(ent) {
+                let dest = (pos.x + move_command.dx, pos.y + move_command.dy);
+                if data.entity_map.colliders.get(&dest) == None {
+                    let move_event = Self::move_position(ent, pos, move_command);
+                    data.move_event_channel.single_write(move_event);
                 }
             }
         }
@@ -139,6 +171,58 @@ impl<'a> System<'a> for Movement {
 
         self.move_command_reader = Some(world.
             fetch_mut::<EventChannel<MoveCommand>>()
+            .register_reader());
+    }
+}
+
+pub struct CollisionMapUpdater {
+    move_event_reader: Option<ReaderId<MoveEvent>>
+}
+
+impl CollisionMapUpdater {
+    pub fn new() -> Self {
+        CollisionMapUpdater { 
+            move_event_reader: None, 
+        }
+    }
+}
+
+#[derive(SystemData)]
+pub struct CollisionMapUpdaterSystemData<'a> {
+    collidables: ReadStorage<'a, Collidable>,
+    entity_map: WriteExpect<'a, EntityMap>,
+
+    // read channels
+    pub move_event_channel: Read<'a, EventChannel<MoveEvent>>,
+}
+
+impl<'a> System<'a> for CollisionMapUpdater {
+    type SystemData = CollisionMapUpdaterSystemData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        // for event in data.move_command_channel.read
+        let move_events = data.move_event_channel
+            .read(self.move_event_reader
+            .as_mut()
+            .unwrap());
+        
+        for move_event in move_events {
+            let ent = move_event.entity;
+            if let Some(_collidable) = data.collidables.get(ent) {
+                // remove collider from previous
+                data.entity_map.colliders
+                    .remove(&(move_event.start_x, move_event.start_y));
+
+                data.entity_map.colliders
+                    .insert((move_event.dest_x, move_event.dest_y), ent);
+            }
+        }
+    }
+
+    fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        self.move_event_reader = Some(world.
+            fetch_mut::<EventChannel<MoveEvent>>()
             .register_reader());
     }
 }

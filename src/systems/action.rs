@@ -17,7 +17,6 @@ impl ActionHandler {
 
 #[derive(SystemData)]
 pub struct ActionHandlerSystemData<'a> {
-        _entities: Entities<'a>,
 
         // read event channels
         command_event_channel: Read<'a, EventChannel<CommandEvent>>,
@@ -30,16 +29,13 @@ impl<'a> System<'a> for ActionHandler {
     type SystemData = ActionHandlerSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let commands = data.command_event_channel
-            .read(self.command_event_reader
-            .as_mut()
-            .unwrap());
-        for command in commands {
-            match command.command {
+        let command_events = data.command_event_channel.read(self.command_event_reader.as_mut().unwrap());
+        for command_event in command_events {
+            match command_event.command {
                 Command::Move(dir) => { 
                     let (x, y) = dir_to_pos(dir);
-                    data.move_command_channel
-                        .single_write(MoveCommand::new(command.entity, x, y)); },
+                    data.move_command_channel.single_write(MoveCommand::new(command_event.entity, x, y)); },
+                // Command::Rest => data.move_command_channel.single_write(MoveCommand::new(command_event.entity, 0, 0)),
                 _ => (),
             }
         }
