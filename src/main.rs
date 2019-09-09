@@ -18,7 +18,6 @@ pub const DEBUG: bool = true;
 mod entities;
 mod components;
 mod systems;
-mod prelude;
 mod map;
 
 // use prelude::*;
