@@ -125,3 +125,11 @@ impl Renderable {
         Renderable { glyph, color }
     }
 }
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Floor;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct OnFloor;

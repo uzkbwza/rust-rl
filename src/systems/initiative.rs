@@ -3,7 +3,7 @@ use specs::prelude::*;
 use crate::components::{Actor, Stats, MyTurn, PlayerControl};
 
 // todo: make actual initiative values a little more procedural and meaningful 
-const MAX_INITIATIVE: i32 = 2000;
+const MAX_INITIATIVE: i32 = 2500;
 
 #[derive(SystemData)]
 pub struct InitiativeSystemData<'a> {
@@ -22,7 +22,7 @@ impl Initiative {
     // some magic numbers in the player stats rn considering they dont do anything yet. will hopefully
     // flesh them out a bit more
     fn get_initiative_from_agility(agility: i32) -> i32 {
-        (agility * 100) / 2
+        (agility * 100)
     }
 }   
 

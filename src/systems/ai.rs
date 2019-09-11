@@ -61,7 +61,7 @@ impl <'a> System<'a> for Ai {
         if data.game_state.player_turn {
             return;
         }
-        for (ent, ai_unit, _my_turn) in (&data.entities, &data.ai_units, &data.my_turns).join() {
+        for (ent, ai_unit, _my_turn, _position) in (&data.entities, &data.ai_units, &data.my_turns, &data.positions).join() {
             let ai_type = ai_unit.ai_type;
             let command = Self::get_command(ent, ai_type, &data);
             match command {

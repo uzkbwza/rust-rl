@@ -42,16 +42,17 @@ fn main() {
         .with_barrier()
         .with(systems::input::Input::new(), "input_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["input_sys", "ai_sys"])
-        .with_barrier()
         .with(systems::movement::Movement::new(), "movement_sys", &["action_sys"])
-        .with_barrier()
-        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &["action_sys"])
+        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &["movement_sys", "action_sys"])
         .with_barrier()
         .with_thread_local(systems::render::Render::new());
 
     if DEBUG {
         builder.add(systems::debug::DEBUG::new(), "debug_sys", &[])
     }
+
+    tcod::system::set_fps(60);
+
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
    
@@ -67,10 +68,16 @@ fn main() {
     world.insert(map);
 
     let player = entities::create_player(&mut world, SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
-    for _ in 0..10 {
+    
+    for _ in 0..200 {
         entities::create_dummy(&mut world, player);
     }
 
+    for x in 0..SCREEN_WIDTH {
+        for y in 0..SCREEN_HEIGHT {
+            entities::create_floor(&mut world, x, y);
+        }
+    }
 
     loop {
         dispatcher.dispatch(&mut world);
