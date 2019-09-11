@@ -2,6 +2,8 @@ use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
 use crate::components::{Position, Collidable};
+use crate::map::View;
+
 
 
 // use crate::systems::control::{CommandEvent};
@@ -87,6 +89,20 @@ pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
             Dir::SW => (-1, 1),
             Dir::SE => (1, 1),
             Dir::Nowhere => (0, 0),
+        }
+}
+
+pub fn pos_to_dir(pos: (i32, i32)) -> Dir {
+        match pos {
+            (0, -1) => Dir::N,
+            (0, 1) => Dir::S,
+            (1, 0) => Dir::E,
+            (-1, 0) => Dir::W, 
+            (-1, -1) => Dir::NW,
+            (1, -1) => Dir::NE,
+            (-1, 1) => Dir::SW,
+            (1, 1) =>  Dir::SE,
+            _ =>  Dir::Nowhere,
         }
 }
 
@@ -176,21 +192,27 @@ impl<'a> System<'a> for Movement {
 }
 
 pub struct CollisionMapUpdater {
-    move_event_reader: Option<ReaderId<MoveEvent>>
+    move_event_reader: Option<ReaderId<MoveEvent>>,
+    initialized: bool,
 }
 
 impl CollisionMapUpdater {
     pub fn new() -> Self {
         CollisionMapUpdater { 
             move_event_reader: None, 
+            initialized: false
         }
     }
 }
 
 #[derive(SystemData)]
 pub struct CollisionMapUpdaterSystemData<'a> {
-    collidables: ReadStorage<'a, Collidable>,
-    entity_map: WriteExpect<'a, EntityMap>,
+    pub entities: Entities<'a>,
+    pub collidables: ReadStorage<'a, Collidable>,
+    pub positions: ReadStorage<'a, Position>,
+    pub entity_map: WriteExpect<'a, EntityMap>,
+    pub view: WriteExpect<'a, View>,
+
 
     // read channels
     pub move_event_channel: Read<'a, EventChannel<MoveEvent>>,
@@ -206,15 +228,33 @@ impl<'a> System<'a> for CollisionMapUpdater {
             .as_mut()
             .unwrap());
         
+        let mut view = data.view.map.lock().unwrap();
+        // populate collision map
+
+        if !self.initialized { 
+            for (ent, pos) in (&data.entities, &data.positions).join() {
+                if let Some(_collidable) = data.collidables.get(ent) {
+                    data.entity_map.colliders.insert((pos.x, pos.y), ent);
+                    view.set(pos.x, pos.y, true, false);
+                } else {
+                    view.set(pos.x, pos.y, true, true);
+                }
+                
+            }
+            self.initialized = true
+        }
         for move_event in move_events {
             let ent = move_event.entity;
             if let Some(_collidable) = data.collidables.get(ent) {
-                // remove collider from previous
-                data.entity_map.colliders
-                    .remove(&(move_event.start_x, move_event.start_y));
+                let (x, y) = (move_event.start_x, move_event.start_y);
+                let (dx, dy) = (move_event.dest_x, move_event.dest_y);
 
-                data.entity_map.colliders
-                    .insert((move_event.dest_x, move_event.dest_y), ent);
+                // remove collider from previous position
+                data.entity_map.colliders.remove(&(x, y));
+                view.set(x, y, true, true);
+
+                data.entity_map.colliders.insert((dx, dy), ent);
+                view.set(dx, dy, true, true);
             }
         }
     }

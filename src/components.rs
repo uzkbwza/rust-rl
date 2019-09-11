@@ -1,11 +1,16 @@
 use specs::prelude::*;
 use tcod::colors;
-use crate::systems::control::AiType;
-
+use crate::systems::ai::AiType;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct PrintDebug;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Target {
+    pub entity: Entity,
+}
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]

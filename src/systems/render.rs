@@ -2,13 +2,15 @@ use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use tcod::console::*;
 use tcod::colors;
-use crate::components::{Renderable};
+use crate::components::{Position,Renderable};
 use crate::map::EntityMap;
 use crate::systems::movement::MoveEvent;
+
 
 #[derive(SystemData)]
 pub struct RenderData<'a> {
         renderables: ReadStorage<'a, Renderable>,
+        positions: ReadStorage<'a, Position>,
         root:        WriteExpect<'a, Root>,
         game_state: ReadExpect<'a, crate::GameState>,
         entity_map: Write<'a, EntityMap>,
@@ -17,12 +19,14 @@ pub struct RenderData<'a> {
 
 pub struct Render {
     move_event_reader: Option<ReaderId<MoveEvent>>,
+    initialized: bool
 }
 
 impl Render {
     pub fn new() -> Self {
         Render {
-            move_event_reader: None
+            move_event_reader: None,
+            initialized: false
         }
     }
 }
@@ -31,6 +35,15 @@ impl<'a> System<'a> for Render {
     type SystemData = RenderData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
+        
+        if !self.initialized {
+            for (rend, pos) in (&data.renderables, &data.positions).join() {
+                data.root.put_char(pos.x, pos.y, rend.glyph, BackgroundFlag::None);
+                data.root.set_char_foreground(pos.x, pos.y, rend.color);
+            }
+        }
+        self.initialized = true;
+
         if data.game_state.player_turn {
             tcod::system::set_fps(60);
             let move_events = data.move_event_channel

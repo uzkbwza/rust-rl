@@ -1,5 +1,7 @@
 use specs::prelude::*;
 use std::collections::HashMap;
+use tcod::map::Map as TcodMap;
+use std::sync::{Arc, Mutex};
 
 #[derive(Default, Debug)]
 pub struct EntityMap {
@@ -16,4 +18,9 @@ impl EntityMap {
             renderables,
         }
     }
+}
+
+// use for pathfinding, fov, etc. essentially just a wrapper for tcod's map
+pub struct View {
+    pub map: Arc<Mutex<TcodMap>>
 }

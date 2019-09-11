@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use crate::systems::control::{Command, CommandEvent};
+use crate::command::{Command, CommandEvent};
 use crate::systems::movement::{MoveCommand, dir_to_pos};
 use shrev::{EventChannel, ReaderId};
 

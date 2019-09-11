@@ -1,11 +1,13 @@
-use specs::prelude::*;
-use shrev::{EventChannel};
 use tcod::console::*;
 use tcod::input::{KeyCode, KeyPressFlags};
 use tcod::input::Key as TcodKey;
-use crate::components::{PlayerControl, AiControl, MyTurn};
-use crate::systems::movement::Dir;
 
+use specs::prelude::*;
+use shrev::{EventChannel};
+use crate::command::{Command, CommandEvent};
+
+use crate::components::{PlayerControl, MyTurn};
+use crate::systems::movement::{Dir};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum KeyEvent {
@@ -21,85 +23,6 @@ pub enum KeyEvent {
     N, O, P, Q, R, S, T, U, V, W, X, Y, Z, _UNIMPLEMENTED
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Command {
-    Move(Dir),
-    _Use(Entity),
-    ToggleRealTime,
-    EndGame,
-}
-
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct CommandEvent {
-    pub command: Command,
-    pub entity: Entity,
-}
-
-impl CommandEvent {
-    pub fn new(command: Command, entity: Entity) -> Self {
-        CommandEvent { command, entity }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum AiType {
-    Dummy,
-    _Friendly,
-    _Monster,
-}
-
-pub struct Ai;
-
-impl Ai {
-    fn get_command(&mut self, ai_type: AiType, _data: &<Ai as System>::SystemData) -> Option<Command> {
-        match ai_type {
-            AiType::Dummy => Some(Command::Move(Dir::E)),
-            _ => None,
-        }
-    }
-    fn _find_path_to(_starting_pos: (i32, i32), _target_pos: (i32, i32), _data: &<Ai as System>::SystemData) {
-        unimplemented!();
-    }
-}
-
-#[derive(SystemData)]
-pub struct AiSystemData<'a> {
-    pub entities: Entities<'a>,
-    pub ai_units:    ReadStorage<'a, AiControl>,
-    pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
-    pub my_turns:   WriteStorage<'a, MyTurn>,
-    pub game_state: ReadExpect<'a, crate::GameState>,
-    pub world_updater:  Read<'a, LazyUpdate>,
-}
-
-impl <'a> System<'a> for Ai {
-    type SystemData = AiSystemData<'a>;
-
-    fn run(&mut self, mut data: Self::SystemData) {
-        if data.game_state.player_turn {
-            return;
-        }
-        for (ent, ai_unit, _my_turn) in (&data.entities, &data.ai_units, &data.my_turns).join() {
-            let ai_type = ai_unit.ai_type;
-            let command = self.get_command(ai_type, &data);
-            match command {
-                None => (),
-                Some(_) => {
-                    // attach action component to player entity 
-                    let command_event = CommandEvent::new(command.unwrap(), ent);
-                    data.command_event_channel.single_write(command_event);
-                }
-            }
-            data.world_updater.remove::<MyTurn>(ent);
-        }
-    }
-
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-        let command_event_channel: EventChannel<CommandEvent> = EventChannel::new();
-        world.insert(command_event_channel);
-    }
-}
 
 pub struct Input {
     key_event_queue: Vec<KeyEvent>,
