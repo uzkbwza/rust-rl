@@ -51,7 +51,7 @@ impl Corporeal {
     }
 }
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, PartialEq)]
 #[storage(NullStorage)]
 pub struct Collidable;
 

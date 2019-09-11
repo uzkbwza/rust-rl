@@ -23,6 +23,36 @@ pub enum Dir {
     Nowhere,
 }
 
+impl Dir {
+        pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
+            match dir {
+                Dir::N => (0, -1),
+                Dir::S => (0, 1),
+                Dir::E => (1, 0),
+                Dir::W => (-1, 0),
+                Dir::NW => (-1, -1),
+                Dir::NE => (1, -1),
+                Dir::SW => (-1, 1),
+                Dir::SE => (1, 1),
+                Dir::Nowhere => (0, 0),
+            }
+    }
+
+    pub fn pos_to_dir(pos: (i32, i32)) -> Dir {
+            match pos {
+                (0, -1) => Dir::N,
+                (0, 1) => Dir::S,
+                (1, 0) => Dir::E,
+                (-1, 0) => Dir::W, 
+                (-1, -1) => Dir::NW,
+                (1, -1) => Dir::NE,
+                (-1, 1) => Dir::SW,
+                (1, 1) =>  Dir::SE,
+                _ =>  Dir::Nowhere,
+            }
+    }
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct MoveCommand {
     entity: Entity,
@@ -78,34 +108,6 @@ impl CollisionEvent {
     }
 }
 
-pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
-        match dir {
-            Dir::N => (0, -1),
-            Dir::S => (0, 1),
-            Dir::E => (1, 0),
-            Dir::W => (-1, 0),
-            Dir::NW => (-1, -1),
-            Dir::NE => (1, -1),
-            Dir::SW => (-1, 1),
-            Dir::SE => (1, 1),
-            Dir::Nowhere => (0, 0),
-        }
-}
-
-pub fn pos_to_dir(pos: (i32, i32)) -> Dir {
-        match pos {
-            (0, -1) => Dir::N,
-            (0, 1) => Dir::S,
-            (1, 0) => Dir::E,
-            (-1, 0) => Dir::W, 
-            (-1, -1) => Dir::NW,
-            (1, -1) => Dir::NE,
-            (-1, 1) => Dir::SW,
-            (1, 1) =>  Dir::SE,
-            _ =>  Dir::Nowhere,
-        }
-}
-
 pub struct Movement {
         pub move_command_reader: Option<ReaderId<MoveCommand>>
 }
@@ -147,7 +149,8 @@ pub struct MovementSystemData<'a> {
     pub entities: Entities<'a>,
     pub positions: WriteStorage<'a, Position>,
     pub collidables: ReadStorage<'a, Collidable>,
-    pub entity_map: ReadExpect<'a, EntityMap>,
+    pub entity_map: WriteExpect<'a, EntityMap>,
+    pub view: WriteExpect<'a, View>,
 
     // read channels
     pub move_command_channel: Read<'a, EventChannel<MoveCommand>>,
@@ -166,13 +169,24 @@ impl<'a> System<'a> for Movement {
             .as_mut()
             .unwrap());
         
+        let mut view = data.view.map.lock().unwrap();
+        
         for move_command in move_commands {
             let ent = move_command.entity;
             if let Some(pos) = data.positions.get_mut(ent) {
                 let dest = (pos.x + move_command.dx, pos.y + move_command.dy);
-                if data.entity_map.colliders.get(&dest) == None {
+                if data.entity_map.colliders.get(&dest) == None || data.collidables.get(ent) == None {
                     let move_event = Self::move_position(ent, pos, move_command);
                     data.move_event_channel.single_write(move_event);
+                    let (x, y) = (move_event.start_x, move_event.start_y);
+                    let (dx, dy) = (move_event.dest_x, move_event.dest_y);
+
+                    // remove collider from previous position
+                    data.entity_map.colliders.remove(&(x, y));
+                    view.set(x, y, true, true);
+
+                    data.entity_map.colliders.insert((dx, dy), ent);
+                    view.set(dx, dy, true, true);
                 }
             }
         }
@@ -192,14 +206,12 @@ impl<'a> System<'a> for Movement {
 }
 
 pub struct CollisionMapUpdater {
-    move_event_reader: Option<ReaderId<MoveEvent>>,
     initialized: bool,
 }
 
 impl CollisionMapUpdater {
     pub fn new() -> Self {
         CollisionMapUpdater { 
-            move_event_reader: None, 
             initialized: false
         }
     }
@@ -212,10 +224,6 @@ pub struct CollisionMapUpdaterSystemData<'a> {
     pub positions: ReadStorage<'a, Position>,
     pub entity_map: WriteExpect<'a, EntityMap>,
     pub view: WriteExpect<'a, View>,
-
-
-    // read channels
-    pub move_event_channel: Read<'a, EventChannel<MoveEvent>>,
 }
 
 impl<'a> System<'a> for CollisionMapUpdater {
@@ -223,10 +231,6 @@ impl<'a> System<'a> for CollisionMapUpdater {
 
     fn run(&mut self, mut data: Self::SystemData) {
         // for event in data.move_command_channel.read
-        let move_events = data.move_event_channel
-            .read(self.move_event_reader
-            .as_mut()
-            .unwrap());
         
         let mut view = data.view.map.lock().unwrap();
         // populate collision map
@@ -239,30 +243,8 @@ impl<'a> System<'a> for CollisionMapUpdater {
                 } else {
                     view.set(pos.x, pos.y, true, true);
                 }
-                
             }
             self.initialized = true
         }
-        for move_event in move_events {
-            let ent = move_event.entity;
-            if let Some(_collidable) = data.collidables.get(ent) {
-                let (x, y) = (move_event.start_x, move_event.start_y);
-                let (dx, dy) = (move_event.dest_x, move_event.dest_y);
-
-                // remove collider from previous position
-                data.entity_map.colliders.remove(&(x, y));
-                view.set(x, y, true, true);
-
-                data.entity_map.colliders.insert((dx, dy), ent);
-                view.set(dx, dy, true, true);
-            }
-        }
-    }
-
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-        self.move_event_reader = Some(world.
-            fetch_mut::<EventChannel<MoveEvent>>()
-            .register_reader());
     }
 }

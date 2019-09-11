@@ -1,6 +1,6 @@
 use specs::prelude::*;
 use crate::command::{Command, CommandEvent};
-use crate::systems::movement::{MoveCommand, dir_to_pos};
+use crate::systems::movement::{MoveCommand, Dir};
 use shrev::{EventChannel, ReaderId};
 
 pub struct ActionHandler {
@@ -33,7 +33,7 @@ impl<'a> System<'a> for ActionHandler {
         for command_event in command_events {
             match command_event.command {
                 Command::Move(dir) => { 
-                    let (x, y) = dir_to_pos(dir);
+                    let (x, y) = Dir::dir_to_pos(dir);
                     data.move_command_channel.single_write(MoveCommand::new(command_event.entity, x, y)); },
                 // Command::Rest => data.move_command_channel.single_write(MoveCommand::new(command_event.entity, 0, 0)),
                 _ => (),

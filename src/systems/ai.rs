@@ -19,12 +19,24 @@ pub struct Ai;
 impl Ai {
     fn get_command(entity: Entity, ai_type: AiType, data: &<Ai as System>::SystemData) -> Option<Command> {
         match ai_type {
-            AiType::Dummy => Some(Command::Move(Self::path_to(entity, data))),
+            AiType::Dummy => Some(Command::Move(Self::path_to_player(entity, data))),
             _ => None,
         }
     }
-    fn path_to(_entity: Entity, _data: &<Ai as System>::SystemData) -> Dir {
-        // pathfinding code here
+    fn path_to_player(entity: Entity, data: &<Ai as System>::SystemData) -> Dir {
+        if let (Some(target), Some(pos)) = (data.targets.get(entity), data.positions.get(entity)) {
+            if let Some(dest) = data.positions.get(target.entity) {
+                let dx = dest.x - pos.x;
+                let dy = dest.y - pos.y;
+                let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
+
+                // normalize it to length 1 (preserving direction), then round it and
+                // convert to integer so the movement is restricted to the map grid
+                let dx = (dx as f32 / distance).round() as i32;
+                let dy = (dy as f32 / distance).round() as i32;
+                return Dir::pos_to_dir((dx, dy))
+            }
+        }
         Dir::Nowhere
     }
 }
