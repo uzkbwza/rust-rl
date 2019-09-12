@@ -3,7 +3,7 @@ use shrev::{EventChannel};
 use crate::command::{Command, CommandEvent};
 use crate::components::{AiControl, MyTurn, Position, Target};
 use crate::systems::movement::{Dir};
-use crate::map::View;
+use crate::map::{EntityMap, View};
 
 // use std::sync::{Arc, Mutex};
 
@@ -26,6 +26,7 @@ impl Ai {
     fn path_to_player(entity: Entity, data: &<Ai as System>::SystemData) -> Dir {
         if let (Some(target), Some(pos)) = (data.targets.get(entity), data.positions.get(entity)) {
             if let Some(dest) = data.positions.get(target.entity) {
+
                 let dx = dest.x - pos.x;
                 let dy = dest.y - pos.y;
                 let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
@@ -39,11 +40,13 @@ impl Ai {
         }
         Dir::Nowhere
     }
+    
 }
 
 #[derive(SystemData)]
 pub struct AiSystemData<'a> {
     pub entities: Entities<'a>,
+    pub entity_map: ReadExpect<'a, EntityMap>,
     pub positions:  ReadStorage<'a, Position>,
     pub targets:     ReadStorage<'a, Target>,
     pub ai_units:    ReadStorage<'a, AiControl>,

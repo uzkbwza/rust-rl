@@ -4,7 +4,9 @@ use crate::systems::movement::Dir;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Command {
     Move(Dir),
+    Attack(Dir),
     _Use(Entity),
+    Rest,
     ToggleRealTime,
     EndGame,
 }

@@ -27,15 +27,17 @@ pub struct ActionHandlerSystemData<'a> {
 
 impl<'a> System<'a> for ActionHandler {
     type SystemData = ActionHandlerSystemData<'a>;
-
+    
     fn run(&mut self, mut data: Self::SystemData) {
         let command_events = data.command_event_channel.read(self.command_event_reader.as_mut().unwrap());
         for command_event in command_events {
             match command_event.command {
-                Command::Move(dir) => { 
+                Command::Move(dir) => {
                     let (x, y) = Dir::dir_to_pos(dir);
                     data.move_command_channel.single_write(MoveCommand::new(command_event.entity, x, y)); },
-                // Command::Rest => data.move_command_channel.single_write(MoveCommand::new(command_event.entity, 0, 0)),
+                Command::Attack(dir) => {
+                    let (x, y) = Dir::dir_to_pos(dir);
+                }
                 _ => (),
             }
         }

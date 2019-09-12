@@ -4,9 +4,10 @@ use tcod::input::Key as TcodKey;
 
 use specs::prelude::*;
 use shrev::{EventChannel};
-use crate::command::{Command, CommandEvent};
 
-use crate::components::{PlayerControl, MyTurn};
+use crate::command::{Command, CommandEvent};
+use crate::map::EntityMap;
+use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -132,7 +133,9 @@ impl Input {
 #[derive(SystemData)]
 pub struct InputSystemData<'a> {
     pub entities:   Entities<'a>,
+    pub entity_map: ReadExpect<'a, EntityMap>,
     pub players:    ReadStorage<'a, PlayerControl>,
+    pub positions: ReadStorage<'a, Position>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:          Read<'a, LazyUpdate>,
     pub root:       ReadExpect<'a, Root>,
@@ -169,12 +172,19 @@ impl<'a> System<'a> for Input {
                 
                 // player commands
                 Some(_) => {
-
                     // attach action component to player entity 
                     let command_event = CommandEvent::new(command.unwrap(), ent);
                     data.command_event_channel.single_write(command_event);
-                    data.world_updater.remove::<MyTurn>(ent);
-                    data.game_state.player_turn = false;
+
+                    // make sure bumping into walls doesnt take a turn
+                    if let (Some(Command::Move(dir)), Some(pos)) = (Some(command_event.command), data.positions.get(ent)) {
+                        let dpos = Dir::dir_to_pos(dir);
+                        let dest = (dpos.0 + pos.x, dpos.1 + pos.y);
+                        if data.entity_map.colliders.get(&dest) == None || dir == Dir::Nowhere{
+                            data.world_updater.remove::<MyTurn>(ent);
+                            data.game_state.player_turn = false;
+                        }
+                    }
                 },
             }
         }

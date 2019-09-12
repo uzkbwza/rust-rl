@@ -1,6 +1,6 @@
 use specs::prelude::*;
 // use shrev::{EventChannel, ReaderId};
-use crate::components::{Actor, Stats, MyTurn, PlayerControl};
+use crate::components::{Actor, CostMultiplier, Stats, MyTurn, PlayerControl};
 
 // todo: make actual initiative values a little more procedural and meaningful 
 const MAX_INITIATIVE: i32 = 2500;
@@ -9,6 +9,7 @@ const MAX_INITIATIVE: i32 = 2500;
 pub struct InitiativeSystemData<'a> {
     entities: Entities<'a>,
     actors: WriteStorage<'a, Actor>,
+    cost_multipliers: WriteStorage<'a, CostMultiplier>,
     players: ReadStorage<'a, PlayerControl>,
     my_turns: WriteStorage<'a, MyTurn>,
     stats_lists: ReadStorage<'a, Stats>,
@@ -37,6 +38,9 @@ impl<'a> System<'a> for Initiative {
                 } else {
                     if let Some(stats_list) = data.stats_lists.get(ent) {
                         actor.initiative = MAX_INITIATIVE - Self::get_initiative_from_agility(stats_list.agility);
+                        if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
+                            actor.initiative = (actor.initiative as f32 * cost_multiplier.multiplier) as i32;
+                        }
                     } else {
                         actor.initiative = MAX_INITIATIVE;
                     }

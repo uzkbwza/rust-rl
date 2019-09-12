@@ -21,17 +21,23 @@ pub struct Name {
 #[derive(Component, Debug)]
 #[storage(DenseVecStorage)]
 pub struct Actor {
-    pub initiative: i32
+    pub initiative: i32,
 }
 
 impl Actor {
     pub fn new() -> Self {
-        Actor { initiative: 0 }
+        Actor { initiative: 0}
     }
 
     pub fn decrement_initiative(&mut self, speed: i32) {
         self.initiative -= speed;
     }
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct CostMultiplier {
+    pub multiplier: f32,
 }
 
 #[derive(Component, Debug)]
@@ -61,7 +67,6 @@ pub struct Stats {
     pub strength: i32,
     pub agility: i32,
     pub intelligence: i32,
-
 }
 
 impl Stats {
@@ -77,18 +82,6 @@ impl Stats {
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct MyTurn;
-
-// #[derive(Component, Debug)]
-// #[storage(DenseVecStorage)]
-// pub struct Action {
-//     pub command: Command
-// }
-
-// impl Action {
-//     pub fn new(command: Command) -> Self {
-//         Action {command}
-//     }
-// }
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
@@ -126,6 +119,12 @@ impl Renderable {
     }
 }
 
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct BoxRenderable {
+    pub map: Vec<Vec<(char, colors::Color)>>,
+}
+
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct Floor;
@@ -133,3 +132,11 @@ pub struct Floor;
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct OnFloor;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Camera;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct InView;

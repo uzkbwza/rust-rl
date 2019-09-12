@@ -1,10 +1,8 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, Collidable};
+use crate::components::{Position, Collidable, MyTurn, CostMultiplier};
 use crate::map::View;
-
-
 
 // use crate::systems::control::{CommandEvent};
 
@@ -62,6 +60,7 @@ pub struct MoveCommand {
 
 impl MoveCommand {
     pub fn new(entity: Entity, dx: i32, dy: i32) -> Self {
+
         MoveCommand {
             entity,
             dx,
@@ -77,17 +76,25 @@ pub struct MoveEvent {
     pub start_y: i32,
     pub dest_x: i32,
     pub dest_y: i32,
-}
+    pub cost: f32,
+    }
 
 
 impl MoveEvent {
     pub fn new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
+        let cost: f32 = match i32::abs(dest_x-start_x) + i32::abs(dest_y-start_y) {
+            2 => f32::sqrt(2.0),
+            0 => 1.0,
+            _ => 1.0,
+        };
+
         MoveEvent {
             entity,
             start_x,
             start_y,
             dest_x,
             dest_y,
+            cost,
         }
     }
 }
@@ -124,15 +131,15 @@ impl Movement {
         let start_y = position.y;
         position.x += move_command.dx;
         position.y += move_command.dy;
-        if position.x >= crate::SCREEN_WIDTH {
+        if position.x >= crate::MAP_WIDTH {
             position.x = 0;
         } else if position.x <= -1 {
             position.x = crate::SCREEN_WIDTH - 1;
         }
-        if position.y >= crate::SCREEN_HEIGHT {
+        if position.y >= crate::MAP_HEIGHT {
             position.y = 0;
         } else if position.y <= -1 {
-            position.y = crate::SCREEN_HEIGHT - 1;
+            position.y = crate::MAP_HEIGHT - 1;
         }
         MoveEvent::new(
             entity,
@@ -147,6 +154,7 @@ impl Movement {
 #[derive(SystemData)]
 pub struct MovementSystemData<'a> {
     pub entities: Entities<'a>,
+    pub cost_multipliers: WriteStorage<'a, CostMultiplier>,
     pub positions: WriteStorage<'a, Position>,
     pub collidables: ReadStorage<'a, Collidable>,
     pub entity_map: WriteExpect<'a, EntityMap>,
@@ -169,7 +177,7 @@ impl<'a> System<'a> for Movement {
             .as_mut()
             .unwrap());
         
-        let mut view = data.view.map.lock().unwrap();
+        let view = data.view.map.lock().unwrap();
         
         for move_command in move_commands {
             let ent = move_command.entity;
@@ -178,15 +186,19 @@ impl<'a> System<'a> for Movement {
                 if data.entity_map.colliders.get(&dest) == None || data.collidables.get(ent) == None {
                     let move_event = Self::move_position(ent, pos, move_command);
                     data.move_event_channel.single_write(move_event);
+                    if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
+                        cost_multiplier.multiplier = move_event.cost
+                    }
+
                     let (x, y) = (move_event.start_x, move_event.start_y);
                     let (dx, dy) = (move_event.dest_x, move_event.dest_y);
 
                     // remove collider from previous position
                     data.entity_map.colliders.remove(&(x, y));
-                    view.set(x, y, true, true);
+                    // view.set(x, y, true, true);
 
                     data.entity_map.colliders.insert((dx, dy), ent);
-                    view.set(dx, dy, true, true);
+                    // view.set(dx, dy, true, false);
                 }
             }
         }
@@ -204,6 +216,8 @@ impl<'a> System<'a> for Movement {
             .register_reader());
     }
 }
+
+pub struct MovementActionHandler;
 
 pub struct CollisionMapUpdater {
     initialized: bool,
@@ -239,9 +253,9 @@ impl<'a> System<'a> for CollisionMapUpdater {
             for (ent, pos) in (&data.entities, &data.positions).join() {
                 if let Some(_collidable) = data.collidables.get(ent) {
                     data.entity_map.colliders.insert((pos.x, pos.y), ent);
-                    view.set(pos.x, pos.y, true, false);
+                    // view.set(pos.x, pos.y, true, false);
                 } else {
-                    view.set(pos.x, pos.y, true, true);
+                    // view.set(pos.x, pos.y, true, true);
                 }
             }
             self.initialized = true
