@@ -35,7 +35,7 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
         colors::LIGHTEST_GREEN,
     ];
     
-    let chars = "PennisAndAlsoDickeAndBalls";
+    let chars = "Zz";
     let random_char = chars
         .chars()
         .choose(&mut rng)

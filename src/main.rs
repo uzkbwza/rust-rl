@@ -85,11 +85,11 @@ fn main() {
         dummies_list.push(entities::create_dummy(&mut world, dummies_list.choose(&mut rng).unwrap().clone()));
     }
 
-    // for x in 0..MAP_WIDTH {
-    //     for y in 0..MAP_HEIGHT {
-    //         entities::create_floor(&mut world, x, y)
-    //     }
-    // }
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            entities::create_floor(&mut world, x, y)
+        }
+    }
 
     loop {
         dispatcher.dispatch(&mut world);

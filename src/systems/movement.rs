@@ -76,25 +76,17 @@ pub struct MoveEvent {
     pub start_y: i32,
     pub dest_x: i32,
     pub dest_y: i32,
-    pub cost: f32,
     }
 
 
 impl MoveEvent {
     pub fn new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
-        let cost: f32 = match i32::abs(dest_x-start_x) + i32::abs(dest_y-start_y) {
-            2 => f32::sqrt(2.0),
-            0 => 0.0,
-            _ => 1.0,
-        };
-
         MoveEvent {
             entity,
             start_x,
             start_y,
             dest_x,
             dest_y,
-            cost,
         }
     }
 }
@@ -186,10 +178,17 @@ impl<'a> System<'a> for Movement {
                 if data.entity_map.colliders.get(&dest) == None || data.collidables.get(ent) == None {
                     let move_event = Self::move_position(ent, pos, move_command);
                     data.move_event_channel.single_write(move_event);
-                    if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                        cost_multiplier.multiplier = move_event.cost
-                    }
 
+                    // diagonals cost should be more
+                    let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
+                        2 => f32::sqrt(2.0),
+                        1 => 1.0,
+                        _ => 1.0,
+                    };
+
+                    if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
+                        cost_multiplier.multiplier = cost
+                    }
                     let (x, y) = (move_event.start_x, move_event.start_y);
                     let (dx, dy) = (move_event.dest_x, move_event.dest_y);
 
