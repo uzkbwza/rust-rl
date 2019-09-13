@@ -82,7 +82,7 @@ fn main() {
     let mut rng = thread_rng();
 
     for _ in 0..1000 {
-        dummies_list.push(entities::create_dummy(&mut world, dummies_list.choose(&mut rng).unwrap().clone()));
+        dummies_list.push(entities::create_dummy(&mut world, player));
     }
 
     for x in 0..MAP_WIDTH {
