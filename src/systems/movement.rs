@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, Collidable, MyTurn, CostMultiplier};
+use crate::components::{Position, Collidable, CostMultiplier};
 use crate::map::View;
 
 // use crate::systems::control::{CommandEvent};
@@ -84,7 +84,7 @@ impl MoveEvent {
     pub fn new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
         let cost: f32 = match i32::abs(dest_x-start_x) + i32::abs(dest_y-start_y) {
             2 => f32::sqrt(2.0),
-            0 => 1.0,
+            0 => 0.0,
             _ => 1.0,
         };
 
@@ -177,7 +177,7 @@ impl<'a> System<'a> for Movement {
             .as_mut()
             .unwrap());
         
-        let view = data.view.map.lock().unwrap();
+        let mut view = data.view.map.lock().unwrap();
         
         for move_command in move_commands {
             let ent = move_command.entity;
@@ -195,10 +195,10 @@ impl<'a> System<'a> for Movement {
 
                     // remove collider from previous position
                     data.entity_map.colliders.remove(&(x, y));
-                    // view.set(x, y, true, true);
+                    view.set(x, y, true, true);
 
                     data.entity_map.colliders.insert((dx, dy), ent);
-                    // view.set(dx, dy, true, false);
+                    view.set(dx, dy, true, false);
                 }
             }
         }
@@ -216,8 +216,6 @@ impl<'a> System<'a> for Movement {
             .register_reader());
     }
 }
-
-pub struct MovementActionHandler;
 
 pub struct CollisionMapUpdater {
     initialized: bool,
@@ -253,9 +251,9 @@ impl<'a> System<'a> for CollisionMapUpdater {
             for (ent, pos) in (&data.entities, &data.positions).join() {
                 if let Some(_collidable) = data.collidables.get(ent) {
                     data.entity_map.colliders.insert((pos.x, pos.y), ent);
-                    // view.set(pos.x, pos.y, true, false);
+                    view.set(pos.x, pos.y, true, false);
                 } else {
-                    // view.set(pos.x, pos.y, true, true);
+                    view.set(pos.x, pos.y, true, true);
                 }
             }
             self.initialized = true

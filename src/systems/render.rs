@@ -2,40 +2,33 @@ use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use tcod::console::*;
 use tcod::colors;
-use rand::prelude::*;
-use crate::components::{Position, Floor, OnFloor, Renderable, BoxRenderable, Camera, InView};
-use crate::map::{View, EntityMap};
+use crate::components::{Position, Floor, OnFloor, Renderable, Camera, Actor};
 use crate::systems::movement::MoveEvent;
+use crate::map::EntityMap;
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
 
 
 #[derive(SystemData)]
 pub struct RenderData<'a> {
-        entities: Entities<'a>,
         renderables: ReadStorage<'a, Renderable>,
-        box_renderables: ReadStorage<'a, BoxRenderable>,
         positions: ReadStorage<'a, Position>,
+        actors: ReadStorage<'a, Actor>,
         cameras: ReadStorage<'a, Camera>,
         floors:    ReadStorage<'a, Floor>,
         on_floors:    ReadStorage<'a, OnFloor>,
-        in_views:   WriteStorage<'a, InView>,
         root:        WriteExpect<'a, Root>,
         game_state: ReadExpect<'a, crate::GameState>,
-        entity_map: Write<'a, EntityMap>,
-        move_event_channel: Read<'a, EventChannel<MoveEvent>>,
-        view: WriteExpect<'a, View>,
+        _entity_map: ReadExpect<'a, EntityMap>,
 }
 
 pub struct Render {
     move_event_reader: Option<ReaderId<MoveEvent>>,
-    initialized: bool
 }
 
 impl Render {
     pub fn new() -> Self {
         Render {
             move_event_reader: None,
-            initialized: false
         }
     }
     pub fn get_screen_coordinates(pos: &Position, camera_pos: (i32, i32)) -> (i32, i32) {
@@ -44,7 +37,7 @@ impl Render {
     }
 
     pub fn render(camera_pos: (i32, i32), glyph: char, color: colors::Color, pos: &Position, root: &mut Root) {
-        let mut rend_pos = Self::get_screen_coordinates(pos, camera_pos);
+        let rend_pos = Self::get_screen_coordinates(pos, camera_pos);
         if rend_pos.0 < 0 || rend_pos.0 >= SCREEN_WIDTH { return };
         if rend_pos.1 < 0 || rend_pos.1 >= SCREEN_HEIGHT { return };
         root.put_char(rend_pos.0, rend_pos.1, glyph, BackgroundFlag::Set);
@@ -59,7 +52,7 @@ impl<'a> System<'a> for Render {
         // determine camera position
         let mut camera_position = (0, 0);
 
-        for (pos, camera) in (&data.positions, &data.cameras).join() {
+        for (pos, _camera) in (&data.positions, &data.cameras).join() {
             camera_position = (pos.x, pos.y);
             if camera_position.0 - SCREEN_WIDTH / 2 < 0 {
                 camera_position.0 = SCREEN_WIDTH / 2;
@@ -74,24 +67,17 @@ impl<'a> System<'a> for Render {
             }
         }
 
-        // render floors first...
         if data.game_state.player_turn {
             data.root.clear();
-            // for x in 0..SCREEN_WIDTH {
-            //     for y in 0..SCREEN_HEIGHT {
-            //         data.root.put_char(x, y, '.',  BackgroundFlag::None);
-            //         data.root.set_char_foreground(x, y, colors::DARKEST_GREY);
 
-            //     }
-            // }
-
+            // render floors first...
             tcod::system::set_fps(60);
             for (rend, pos, _floor) in (&data.renderables, &data.positions, &data.floors).join() {
                 Self::render(camera_position, rend.glyph, rend.color, &pos, &mut data.root);
             }        
             
             // ...then things on top of the floor...
-            for (rend, pos, on_floor) in (&data.renderables, &data.positions, &data.on_floors).join() {
+            for (rend, pos, _on_floor) in (&data.renderables, &data.positions, &data.on_floors).join() {
                 Self::render(camera_position, rend.glyph, rend.color, &pos, &mut data.root);
             }
 
@@ -99,13 +85,23 @@ impl<'a> System<'a> for Render {
             for (rend, pos, _on_floor, _floor) in (&data.renderables, &data.positions, !&data.floors, !&data.on_floors).join() {
                 Self::render(camera_position, rend.glyph, rend.color, &pos, &mut data.root);
             }
+
+            if data.game_state.debug {
+                for (_rend, pos, actor) in (&data.renderables, &data.positions, &data.actors).join() {
+                    let rend_pos = Self::get_screen_coordinates(pos, camera_position);
+                    if rend_pos.0 - 1 < 0 || rend_pos.0 >= SCREEN_WIDTH { continue };
+                    if rend_pos.1 < 0 || rend_pos.1 >= SCREEN_HEIGHT { continue };
+                    data.root.print(rend_pos.0 - 1, rend_pos.1 + 1, format!("{}", actor.fatigue));
+                }
+            }
+
         } else {
             // not sure WHY i have to do this... but locking the FPS seems to slow the whole game down. 
             // chalking that up to another weird tcod thing.
-            tcod::system::set_fps(10000);
-            }
-        data.root.flush();
+            tcod::system::set_fps(1000000);
+        }
 
+        data.root.flush();
     }
 
     fn setup(&mut self, world: &mut World) {

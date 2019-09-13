@@ -3,7 +3,7 @@ use specs::prelude::*;
 use crate::components::{Actor, CostMultiplier, Stats, MyTurn, PlayerControl};
 
 // todo: make actual initiative values a little more procedural and meaningful 
-const MAX_INITIATIVE: i32 = 2500;
+const MAX_FATIGUE: i32 = 2500;
 
 #[derive(SystemData)]
 pub struct InitiativeSystemData<'a> {
@@ -32,17 +32,17 @@ impl<'a> System<'a> for Initiative {
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.game_state.player_turn {
             for (ent, actor, _my_turn) in (&data.entities, &mut data.actors, !&data.my_turns).join() {
-                if actor.initiative > 0 {
-                    let speed = MAX_INITIATIVE / 10;
-                    actor.decrement_initiative(speed);
+                if actor.fatigue > 0 {
+                    let speed = MAX_FATIGUE / 10;
+                    actor.decrement_fatigue(speed);
                 } else {
                     if let Some(stats_list) = data.stats_lists.get(ent) {
-                        actor.initiative = MAX_INITIATIVE - Self::get_initiative_from_agility(stats_list.agility);
+                        actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(stats_list.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                            actor.initiative = (actor.initiative as f32 * cost_multiplier.multiplier) as i32;
+                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as i32;
                         }
                     } else {
-                        actor.initiative = MAX_INITIATIVE;
+                        actor.fatigue = MAX_FATIGUE;
                     }
                     data.world_updater.insert(ent, MyTurn);
 

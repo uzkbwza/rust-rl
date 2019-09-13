@@ -10,7 +10,7 @@ pub struct EntityMap {
 }
 
 impl EntityMap {
-    pub fn _new() -> Self {
+    pub fn new() -> Self {
         let colliders: HashMap<(i32, i32), Entity> = HashMap::new();
         let renderables: HashMap<(i32, i32), Entity> = HashMap::new();
         EntityMap {
@@ -21,6 +21,7 @@ impl EntityMap {
 }
 
 // use for pathfinding, fov, etc. essentially just a wrapper for tcod's map
+// currently not actually used for anything...
 pub struct View {
     pub map: Arc<Mutex<TcodMap>>
 }

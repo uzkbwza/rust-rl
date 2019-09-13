@@ -35,9 +35,6 @@ impl<'a> System<'a> for ActionHandler {
                 Command::Move(dir) => {
                     let (x, y) = Dir::dir_to_pos(dir);
                     data.move_command_channel.single_write(MoveCommand::new(command_event.entity, x, y)); },
-                Command::Attack(dir) => {
-                    let (x, y) = Dir::dir_to_pos(dir);
-                }
                 _ => (),
             }
         }

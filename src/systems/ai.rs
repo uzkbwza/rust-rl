@@ -11,6 +11,7 @@ use crate::map::{EntityMap, View};
 #[derive(Debug, Copy, Clone)]
 pub enum AiType {
     Dummy,
+    MoveSE,
     _Friendly,
     _Monster,
 }
@@ -20,6 +21,7 @@ impl Ai {
     fn get_command(entity: Entity, ai_type: AiType, data: &<Ai as System>::SystemData) -> Option<Command> {
         match ai_type {
             AiType::Dummy => Some(Command::Move(Self::path_to_player(entity, data))),
+            AiType::MoveSE => Some(Command::Move(Dir::SE)),
             _ => None,
         }
     }
@@ -27,6 +29,7 @@ impl Ai {
         if let (Some(target), Some(pos)) = (data.targets.get(entity), data.positions.get(entity)) {
             if let Some(dest) = data.positions.get(target.entity) {
 
+                // copied this from tutorial lol
                 let dx = dest.x - pos.x;
                 let dy = dest.y - pos.y;
                 let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();

@@ -21,16 +21,16 @@ pub struct Name {
 #[derive(Component, Debug)]
 #[storage(DenseVecStorage)]
 pub struct Actor {
-    pub initiative: i32,
+    pub fatigue: i32,
 }
 
 impl Actor {
     pub fn new() -> Self {
-        Actor { initiative: 0}
+        Actor { fatigue: 0}
     }
 
-    pub fn decrement_initiative(&mut self, speed: i32) {
-        self.initiative -= speed;
+    pub fn decrement_fatigue(&mut self, speed: i32) {
+        self.fatigue -= speed;
     }
 }
 
