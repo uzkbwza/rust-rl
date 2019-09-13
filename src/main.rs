@@ -14,8 +14,12 @@ use tcod::map::Map as TcodMap;
 
 use std::sync::{Arc, Mutex};
 
-pub const SCREEN_WIDTH: i32 = 120;
-pub const SCREEN_HEIGHT: i32 = 70;
+pub const SCREEN_WIDTH: i32 = 85;
+pub const SCREEN_HEIGHT: i32 = 45;
+
+pub const MAP_HEIGHT: i32 = 512;
+pub const MAP_WIDTH: i32 = 512;
+
 pub const DEBUG: bool = true;
 
 mod entities;
@@ -24,8 +28,8 @@ mod systems;
 mod map;
 mod command;
 
-// use prelude::*;
 
+// use prelude::*;
 pub struct GameState {
     pub end: bool,
     pub player_turn: bool,
@@ -51,32 +55,25 @@ fn main() {
         builder.add(systems::debug::DEBUG::new(), "debug_sys", &[])
     }
 
-    tcod::system::set_fps(60);
-
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
    
     let game_state = GameState { end: false, player_turn: false, real_time: false, debug: DEBUG };
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("terminal2.png", FontLayout::AsciiInCol)
+        .font("terminal.png", FontLayout::AsciiInCol)
         .init();
-    let map = map::View { map: Arc::new(Mutex::new(TcodMap::new(SCREEN_WIDTH,SCREEN_HEIGHT))) };
+    let map = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     
     world.insert(game_state);
     world.insert(root);
     world.insert(map);
 
-    let player = entities::create_player(&mut world, SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+    let player = entities::create_player(&mut world, MAP_WIDTH/ 2, MAP_HEIGHT/2);
+    entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 10);
     
-    for _ in 0..200 {
+    for _ in 0..1000 {
         entities::create_dummy(&mut world, player);
-    }
-
-    for x in 0..SCREEN_WIDTH {
-        for y in 0..SCREEN_HEIGHT {
-            entities::create_floor(&mut world, x, y);
-        }
     }
 
     loop {
