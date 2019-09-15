@@ -7,21 +7,22 @@ use tcod::colors;
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
+        .with(Name::new("Player"))
+        .with(Seeing::new(20))
         .with(Position::new(x,y))
         .with(Renderable::new('@', colors::WHITE))
         .with(Camera{})
         .with(CostMultiplier { multiplier: 1.0 })
-        .with(Collidable{})
         // .with(Corporeal::new(10))
         .with(Actor::new())
         .with(PlayerControl{})
-        .with(Stats::new(10,10,10))
+        .with(Stats::new(10,12,10))
         .build()
 }
 
 pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let mut rng = rand::thread_rng();
-    let stats: (i32, i32, i32) = (10,rng.gen_range(1,20),10);
+    let stats: (i32, i32, i32) = (10,rng.gen_range(1,5),10);
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
@@ -43,10 +44,11 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
 
     let color = *possible_colors.choose(&mut rng).unwrap();
     world.create_entity()
+        .with(Name::new("Zombie"))
+        .with(Seeing::new(10))
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color))
         // .with(Corporeal::new(10))
-        .with(Collidable{})
         .with(CostMultiplier { multiplier: 1.0 })
         .with(Actor::new())
         .with(Target { entity })
@@ -57,7 +59,7 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
 
 pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let mut rng = rand::thread_rng();
-    let brightness: i16 = 20;
+    let brightness: i16 = 40;
     let variation: i16 = 15;
     let chars = ",.\' ";
     let random_char = chars
@@ -72,6 +74,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
         g,
         b,
     };
+
     world.create_entity()
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color))
@@ -83,7 +86,9 @@ pub fn create_wall(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x, y))
         .with(Renderable::new('#', colors::WHITE))
-        .with(Collidable{})
+        .with(BlockSight)
+        .with(BlockMovement{})
+        .with(Collidable)
         .build();
 }
 

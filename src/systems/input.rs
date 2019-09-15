@@ -6,7 +6,7 @@ use specs::prelude::*;
 use shrev::{EventChannel};
 
 use crate::command::{Command, CommandEvent};
-use crate::map::EntityMap;
+use crate::map::{EntityMap, View};
 use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
 
@@ -134,6 +134,7 @@ impl Input {
 pub struct InputSystemData<'a> {
     pub entities:   Entities<'a>,
     pub entity_map: ReadExpect<'a, EntityMap>,
+    pub view: ReadExpect<'a, View>,
     pub players:    ReadStorage<'a, PlayerControl>,
     pub positions: ReadStorage<'a, Position>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
@@ -180,7 +181,7 @@ impl<'a> System<'a> for Input {
                     if let (Some(Command::Move(dir)), Some(pos)) = (Some(command_event.command), data.positions.get(ent)) {
                         let dpos = Dir::dir_to_pos(dir);
                         let dest = (dpos.0 + pos.x, dpos.1 + pos.y);
-                        if data.entity_map.colliders.get(&dest) == None || dir == Dir::Nowhere{
+                        if !data.view.map.lock().unwrap().is_walkable(dest.0, dest.0)|| dir == Dir::Nowhere{
                             data.world_updater.remove::<MyTurn>(ent);
                             data.game_state.player_turn = false;
                         }

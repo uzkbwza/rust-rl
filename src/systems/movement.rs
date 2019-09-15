@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, Collidable, CostMultiplier};
+use crate::components::{Position, Collidable, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor};
 use crate::map::View;
 
 // use crate::systems::control::{CommandEvent};
@@ -150,6 +150,7 @@ pub struct MovementSystemData<'a> {
     pub positions: WriteStorage<'a, Position>,
     pub collidables: ReadStorage<'a, Collidable>,
     pub entity_map: WriteExpect<'a, EntityMap>,
+    pub floors: ReadStorage<'a, Floor>,
     pub view: WriteExpect<'a, View>,
 
     // read channels
@@ -175,7 +176,7 @@ impl<'a> System<'a> for Movement {
             let ent = move_command.entity;
             if let Some(pos) = data.positions.get_mut(ent) {
                 let dest = (pos.x + move_command.dx, pos.y + move_command.dy);
-                if data.entity_map.colliders.get(&dest) == None || data.collidables.get(ent) == None {
+                if data.entity_map.actors.get(&dest) == None || data.collidables.get(ent) == None {
                     let move_event = Self::move_position(ent, pos, move_command);
                     data.move_event_channel.single_write(move_event);
 
@@ -183,7 +184,7 @@ impl<'a> System<'a> for Movement {
                     let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
                         2 => f32::sqrt(2.0),
                         1 => 1.0,
-                        _ => 1.0,
+                        _ => 0.0,
                     };
 
                     if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
@@ -191,13 +192,13 @@ impl<'a> System<'a> for Movement {
                     }
                     let (x, y) = (move_event.start_x, move_event.start_y);
                     let (dx, dy) = (move_event.dest_x, move_event.dest_y);
-
                     // remove collider from previous position
-                    data.entity_map.colliders.remove(&(x, y));
-                    view.set(x, y, true, true);
 
-                    data.entity_map.colliders.insert((dx, dy), ent);
-                    view.set(dx, dy, true, false);
+                    data.entity_map.actors.remove(&(x, y));
+                    // view.set(x, y, true, true);
+
+                    data.entity_map.actors.insert((dx, dy), ent);
+                    // view.set(dx, dy, blocks_sight, collidable);
                 }
             }
         }
@@ -231,7 +232,9 @@ impl CollisionMapUpdater {
 #[derive(SystemData)]
 pub struct CollisionMapUpdaterSystemData<'a> {
     pub entities: Entities<'a>,
-    pub collidables: ReadStorage<'a, Collidable>,
+    pub actors: ReadStorage<'a, Actor>,
+    pub sight_blockers: ReadStorage<'a, BlockSight>,
+    pub movement_blockers: ReadStorage<'a, BlockMovement>,
     pub positions: ReadStorage<'a, Position>,
     pub entity_map: WriteExpect<'a, EntityMap>,
     pub view: WriteExpect<'a, View>,
@@ -244,18 +247,22 @@ impl<'a> System<'a> for CollisionMapUpdater {
         // for event in data.move_command_channel.read
         
         let mut view = data.view.map.lock().unwrap();
+        let mut map = data.entity_map;
         // populate collision map
 
-        if !self.initialized { 
-            for (ent, pos) in (&data.entities, &data.positions).join() {
-                if let Some(_collidable) = data.collidables.get(ent) {
-                    data.entity_map.colliders.insert((pos.x, pos.y), ent);
-                    view.set(pos.x, pos.y, true, false);
-                } else {
-                    view.set(pos.x, pos.y, true, true);
-                }
+        for (ent, pos) in (&data.entities, &data.positions).join() {
+            let mut blocks_sight = false;
+            if let Some(_sight_blocker) = data.sight_blockers.get(ent) {
+                blocks_sight = true;
             }
-            self.initialized = true
+            if let Some(_movement_blocker) = data.movement_blockers.get(ent) {
+                view.set(pos.x, pos.y, false, false);
+            } else {
+                view.set(pos.x, pos.y, !blocks_sight, true);
+            }
+            if let Some(_actor) = data.actors.get(ent) {
+                map.actors.insert((pos.x, pos.y), ent);
+            }
         }
     }
 }

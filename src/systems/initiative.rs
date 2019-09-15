@@ -3,7 +3,7 @@ use specs::prelude::*;
 use crate::components::{Actor, CostMultiplier, Stats, MyTurn, PlayerControl};
 
 // todo: make actual initiative values a little more procedural and meaningful 
-const MAX_FATIGUE: i32 = 2500;
+const MAX_FATIGUE: f32 = 100.0;
 
 #[derive(SystemData)]
 pub struct InitiativeSystemData<'a> {
@@ -22,8 +22,8 @@ pub struct Initiative;
 impl Initiative {
     // some magic numbers in the player stats rn considering they dont do anything yet. will hopefully
     // flesh them out a bit more
-    fn get_initiative_from_agility(agility: i32) -> i32 {
-        (agility * 100)
+    fn get_initiative_from_agility(agility: i32) -> f32 {
+        (agility as f32)
     }
 }   
 
@@ -32,14 +32,15 @@ impl<'a> System<'a> for Initiative {
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.game_state.player_turn {
             for (ent, actor, _my_turn) in (&data.entities, &mut data.actors, !&data.my_turns).join() {
-                if actor.fatigue > 0 {
-                    let speed = MAX_FATIGUE / 10;
-                    actor.decrement_fatigue(speed);
+                if actor.fatigue > 0.0 {
+                    let speed = MAX_FATIGUE / 10.0;
+                    actor.fatigue -= speed;
+                    if actor.fatigue < 0.0 { actor.fatigue = 0.0 };
                 } else {
                     if let Some(stats_list) = data.stats_lists.get(ent) {
                         actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(stats_list.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as i32;
+                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32;
                         }
                     } else {
                         actor.fatigue = MAX_FATIGUE;

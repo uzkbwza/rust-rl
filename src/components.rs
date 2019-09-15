@@ -1,6 +1,7 @@
 use specs::prelude::*;
 use tcod::colors;
 use crate::systems::ai::AiType;
+use std::collections::HashMap;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
@@ -15,22 +16,26 @@ pub struct Target {
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Name {
-    name: String
+    pub name: String
 }
 
-#[derive(Component, Debug)]
+impl Name {
+    pub fn new(name: &str) -> Self {
+        Name {
+            name: String::from(name)
+        }
+    }
+}
+
+#[derive(Component, PartialEq, Debug)]
 #[storage(DenseVecStorage)]
 pub struct Actor {
-    pub fatigue: i32,
+    pub fatigue: f32,
 }
 
 impl Actor {
     pub fn new() -> Self {
-        Actor { fatigue: 0}
-    }
-
-    pub fn decrement_fatigue(&mut self, speed: i32) {
-        self.fatigue -= speed;
+        Actor { fatigue: 0.0 }
     }
 }
 
@@ -140,3 +145,28 @@ pub struct Camera;
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct InView;
+
+#[derive(Component, Default, Debug)]
+#[storage(VecStorage)]
+pub struct Seeing {
+    pub fov: i32,
+    pub seen: HashMap<(i32, i32), char>,
+}
+
+impl Seeing {
+    pub fn new(fov: i32) -> Self {
+        Seeing {
+            fov,
+            seen: HashMap::new()
+        }
+    }
+}
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct BlockSight;
+
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct BlockMovement;

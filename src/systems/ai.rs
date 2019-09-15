@@ -1,7 +1,8 @@
 use specs::prelude::*;
 use shrev::{EventChannel};
+use tcod::map::FovAlgorithm;
 use crate::command::{Command, CommandEvent};
-use crate::components::{AiControl, MyTurn, Position, Target};
+use crate::components::{AiControl, MyTurn, Position, Target, Seeing};
 use crate::systems::movement::{Dir};
 use crate::map::{EntityMap, View};
 
@@ -26,8 +27,15 @@ impl Ai {
         }
     }
     fn path_to_player(entity: Entity, data: &<Ai as System>::SystemData) -> Dir {
-        if let (Some(target), Some(pos)) = (data.targets.get(entity), data.positions.get(entity)) {
+        if let (Some(target), Some(pos), Some(seer)) = (data.targets.get(entity), data.positions.get(entity), data.seers.get(entity)) {
             if let Some(dest) = data.positions.get(target.entity) {
+                
+                let mut fov_map = data.view.map.lock().unwrap();
+                // fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+
+                if !fov_map.is_in_fov(dest.x, dest.y) {
+                    return Dir::Nowhere
+                }
 
                 // copied this from tutorial lol
                 let dx = dest.x - pos.x;
@@ -53,12 +61,15 @@ pub struct AiSystemData<'a> {
     pub positions:  ReadStorage<'a, Position>,
     pub targets:     ReadStorage<'a, Target>,
     pub ai_units:    ReadStorage<'a, AiControl>,
+    pub seers: ReadStorage<'a, Seeing>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:  Read<'a, LazyUpdate>,
     pub game_state: ReadExpect<'a, crate::GameState>,
     pub view: ReadExpect<'a, View>,
 }
+
+
 
 impl <'a> System<'a> for Ai {
     type SystemData = AiSystemData<'a>;
