@@ -1,10 +1,14 @@
 use specs::prelude::*;
 use shrev::{EventChannel};
 use tcod::map::FovAlgorithm;
+use tcod::map::Map as TcodMap;
 use crate::command::{Command, CommandEvent};
-use crate::components::{AiControl, MyTurn, Position, Target, Seeing};
+use crate::components::{AiControl, MyTurn, Position, Target, Seeing, PlayerControl};
 use crate::systems::movement::{Dir};
 use crate::map::{EntityMap, View};
+use tcod::pathfinding::Dijkstra;
+use array2d::Array2D;
+
 
 // use std::sync::{Arc, Mutex};
 
@@ -12,62 +16,93 @@ use crate::map::{EntityMap, View};
 #[derive(Debug, Copy, Clone)]
 pub enum AiType {
     Dummy,
-    MoveSE,
     _Friendly,
     _Monster,
 }
 
 pub struct Ai;
 impl Ai {
-    fn get_command(entity: Entity, ai_type: AiType, data: &<Ai as System>::SystemData) -> Option<Command> {
+    fn get_command(entity: Entity, ai_type: AiType, data: &AiSystemData) -> Option<Command> {
         match ai_type {
-            AiType::Dummy => Some(Command::Move(Self::path_to_player(entity, data))),
-            AiType::MoveSE => Some(Command::Move(Dir::SE)),
+            AiType::Dummy => Some(Command::Move(Self::path_to_target(entity, data))),
             _ => None,
         }
     }
-    fn path_to_player(entity: Entity, data: &<Ai as System>::SystemData) -> Dir {
+
+    fn choose_closest_point(start: (i32, i32), dest: (i32, i32), fov_map: TcodMap, entity_map: &EntityMap) -> (i32, i32) {
+        let mut rankings = Array2D::filled_with(1, entity_map.width, entity_map.height);
+        for x in 0..entity_map.width {
+            for y in 0..entity_map.height {
+                
+            }
+        }
+        (0, 0)
+    }
+
+    fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
         if let (Some(target), Some(pos), Some(seer)) = (data.targets.get(entity), data.positions.get(entity), data.seers.get(entity)) {
             if let Some(dest) = data.positions.get(target.entity) {
                 
                 let mut fov_map = data.view.map.lock().unwrap();
 
-
-                let distance = f64::sqrt(((dest.x - pos.x).pow(2) + (dest.y - pos.y).pow(2)) as f64) as i32;
-                
-                if distance > seer.fov {
-                    return Dir::Nowhere;
-                }
-
                 fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
 
-                if !fov_map.is_in_fov(dest.x, dest.y) {
+                let mut step_pos = (pos.x, pos.y);
+
+                let mut pathfinder = Dijkstra::new_from_map(fov_map.clone(), f32::sqrt(2.0));
+                pathfinder.compute_grid(step_pos);
+                let dest_point = Self::choose_closest_point((pos.x, pos.y), (dest.x, dest.y), fov_map.clone(), &data.entity_map);
+
+                if pathfinder.find((dest_point.0, dest_point.1)) {
+                    if let Some(step) = pathfinder.get(0) {
+                        step_pos = pathfinder.walk_one_step().unwrap(); 
+                    }
+                } else {
                     return Dir::Nowhere;
                 }
 
-                // copied this from tutorial lol
-                let dx = dest.x - pos.x;
-                let dy = dest.y - pos.y;
-                let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
 
-                // normalize it to length 1 (preserving direction), then round it and
-                // convert to integer so the movement is restricted to the map grid
+                if pos.x == step_pos.0 && pos.y == step_pos.1 {
+                    return Dir::Nowhere;
+                }
+
+                let dx = step_pos.0 - pos.x;
+                let dy = step_pos.1 - pos.y;
+                let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
                 let dx = (dx as f32 / distance).round() as i32;
                 let dy = (dy as f32 / distance).round() as i32;
+
                 return Dir::pos_to_dir((dx, dy))
             }
         }
         Dir::Nowhere
     }
     
+    // fn target_player(entity: Entity, data: &AiSystemData) {
+    //     if data.targets.get(entity) != None {
+    //         return 
+    //     }
+
+    //     if let (Some(pos), Some(seer)) = (data.positions.get(entity), data.seers.get(entity)) {
+    //         let mut fov_map = data.view.map.lock().unwrap();
+
+    //         for (player_entity, target_pos, player) in (data.entities, data.positions, data.players).join() {
+    //             fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+    //             if fov_map.is_in_fov(target_pos.x, target_pos.y) {
+    //                 data.targets.insert(entity, Target { entity: player_entity });
+    //             }
+    //         } 
+    //     }
+    // }
 }
 
 #[derive(SystemData)]
 pub struct AiSystemData<'a> {
     pub entities: Entities<'a>,
+    pub players: ReadStorage<'a, PlayerControl>,
     pub entity_map: ReadExpect<'a, EntityMap>,
     pub positions:  ReadStorage<'a, Position>,
-    pub targets:     ReadStorage<'a, Target>,
+    pub targets:     WriteStorage<'a, Target>,
     pub ai_units:    ReadStorage<'a, AiControl>,
     pub seers: ReadStorage<'a, Seeing>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,

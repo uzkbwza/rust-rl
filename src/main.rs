@@ -19,8 +19,8 @@ use std::sync::{Arc, Mutex};
 pub const SCREEN_WIDTH: i32 = 80;
 pub const SCREEN_HEIGHT: i32 = 46;
 
-pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 46;
+pub const MAP_WIDTH: i32 = 200;
+pub const MAP_HEIGHT: i32 = 50;
 
 use std::env;
 
@@ -82,7 +82,7 @@ fn main() {
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
             entities::create_floor(&mut world, x, y);
-            if rng.gen_range(0,1001) >= 999 {
+            if rng.gen_range(0,100) >= 95 && y != MAP_HEIGHT / 2 {
                 entities::create_wall(&mut world, x, y);
             }
         }

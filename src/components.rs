@@ -7,7 +7,7 @@ use std::collections::HashMap;
 #[storage(NullStorage)]
 pub struct PrintDebug;
 
-#[derive(Component, Debug)]
+#[derive(Component, PartialEq, Debug)]
 #[storage(VecStorage)]
 pub struct Target {
     pub entity: Entity,

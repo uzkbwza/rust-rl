@@ -4,3 +4,4 @@ pub mod action;
 pub mod initiative;
 pub mod input;
 pub mod ai;
+pub mod mapgen;

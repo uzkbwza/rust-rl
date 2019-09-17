@@ -198,10 +198,10 @@ impl<'a> System<'a> for Movement {
                 // remove collider from previous position
 
                 data.entity_map.actors.remove(x, y);
-                // view.set(x, y, true, true);
+                view.set(x, y, true, true);
 
                 data.entity_map.actors.insert(dx, dy, ent);
-                // view.set(dx, dy, blocks_sight, collidable);
+                view.set(dx, dy, true, false);
             }
         }
     }
@@ -247,20 +247,26 @@ impl<'a> System<'a> for CollisionMapUpdater {
         let mut view = data.view.map.lock().unwrap();
         let mut map = data.entity_map;
         // populate collision map
+        for x in 0..map.width {
+            for y in 0..map.height {
+                view.set(x as i32, y as i32, true, true)
+            }
+        }
 
         for (ent, pos) in (&data.entities, &data.positions).join() {
-            let mut blocks_sight = false;
+            let mut transparent = true;
+            let mut walkable = true;
             if let Some(_sight_blocker) = data.sight_blockers.get(ent) {
-                blocks_sight = true;
+                transparent = false;
             }
             if let Some(_movement_blocker) = data.movement_blockers.get(ent) {
-                view.set(pos.x, pos.y, !blocks_sight, false);
-            } else {
-                view.set(pos.x, pos.y, !blocks_sight, true);
+                walkable = false
             }
             if let Some(_actor) = data.actors.get(ent) {
                 map.actors.insert(pos.x, pos.y, ent);
+                walkable = false;
             }
+            view.set(pos.x, pos.y, transparent, walkable);
         }
     }
 }

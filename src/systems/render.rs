@@ -75,27 +75,32 @@ impl<'a> System<'a> for Render {
         // determine camera position
         let mut camera_position = (0, 0);
 
-        for (pos, _camera) in (&data.positions, &data.cameras).join() {
-            camera_position = (pos.x, pos.y);
-            if camera_position.0 - SCREEN_WIDTH / 2 < 0 {
-                camera_position.0 = SCREEN_WIDTH / 2;
-            } else if camera_position.0 + SCREEN_WIDTH / 2 > MAP_WIDTH {
-                camera_position.0 = MAP_WIDTH - SCREEN_WIDTH / 2
+        if SCREEN_WIDTH < MAP_WIDTH {
+            for (pos, _camera) in (&data.positions, &data.cameras).join() {
+                camera_position.0 = pos.x;
+                if camera_position.0 - SCREEN_WIDTH / 2 < 0 {
+                    camera_position.0 = SCREEN_WIDTH / 2;
+                } else if camera_position.0 + SCREEN_WIDTH / 2 > MAP_WIDTH {
+                    camera_position.0 = MAP_WIDTH - SCREEN_WIDTH / 2
+                }
             }
-
-            if camera_position.1 - SCREEN_HEIGHT / 2 < 1 {
-                camera_position.1 = SCREEN_HEIGHT / 2;
-            } else if camera_position.1 + SCREEN_HEIGHT / 2 > MAP_HEIGHT {
-                camera_position.1 = MAP_HEIGHT - SCREEN_HEIGHT / 2
+        } else { 
+            camera_position.0 = SCREEN_WIDTH / 2 
             }
-        }
+        
+        if SCREEN_HEIGHT < MAP_HEIGHT {
+            for (pos, _camera) in (&data.positions, &data.cameras).join() {
+                camera_position.1 = pos.y;
+                if camera_position.1 - SCREEN_HEIGHT / 2 < 1 {
+                    camera_position.1 = SCREEN_HEIGHT / 2;
+                } else if camera_position.1 + SCREEN_HEIGHT / 2 > MAP_HEIGHT {
+                    camera_position.1 = MAP_HEIGHT - SCREEN_HEIGHT / 2
+                }
+            }
+        } else { camera_position.1 = SCREEN_HEIGHT / 2 }
 
         for (ent, player, seer, pos) in (&data.entities, &data.players, &mut data.seers, &data.positions).join() {
             if data.game_state.player_turn {
-                // let mouse = input::check_for_event(input::MOUSE_MOVE);
-                // if let Some(mouse) = mouse {
-                //     println!("{:?}", mouse.1.bits())
-                // }
                 data.root.clear();
                 let mut fov_map = &mut data.view.map.lock().unwrap();
                 let map = &data.entity_map;
@@ -108,43 +113,94 @@ impl<'a> System<'a> for Render {
                 tcod::system::set_fps(60);
                 for (rend, pos, _floor) in (&data.renderables, &data.positions, &data.floors).join() {
                     if fov_map.is_in_fov(pos.x, pos.y) {
-                        Self::render(camera_position, rend.glyph, rend.fg_color, rend.bg_color, &pos, &mut data.root, fov_map);
+                        Self::render(
+                            camera_position, 
+                            rend.glyph, 
+                            rend.fg_color, 
+                            rend.bg_color, 
+                            &pos, 
+                            &mut data.root, 
+                            fov_map);
+                            
                         seer.seen.insert((pos.x, pos.y), rend.glyph);
+
                     } else if seer.seen.contains_key(&(pos.x, pos.y)) {
                         if let Some(glyph) = seer.seen.get(&(pos.x, pos.y)) {                        
-                            Self::render(camera_position, *glyph, seen_fg_color, Some(seen_bg_color), &pos, &mut data.root, fov_map);
+                            Self::render(
+                                camera_position, 
+                                *glyph, 
+                                seen_fg_color, 
+                                Some(seen_bg_color), 
+                                &pos, 
+                                &mut data.root, fov_map);
                         }
                     }
                 }
                 
                 // ...then things on top of the floor...
-                for (rend, pos, _on_floor) in (&data.renderables, &data.positions, &data.on_floors).join() {
-                    if fov_map.is_in_fov(pos.x, pos.y) {
-                        Self::render(camera_position, rend.glyph, rend.fg_color, rend.bg_color, &pos, &mut data.root, fov_map);
-                        seer.seen.insert((pos.x, pos.y), rend.glyph);
+                for (rend, pos, _on_floor) in (
+                    &data.renderables, 
+                    &data.positions, 
+                    &data.on_floors)
+                    .join() {
+                        if fov_map.is_in_fov(pos.x, pos.y) {
+                            Self::render(
+                                camera_position, 
+                                rend.glyph, 
+                                rend.fg_color, 
+                                rend.bg_color, 
+                                &pos, 
+                                &mut data.root, 
+                                fov_map);
+                                
+                            seer.seen.insert((pos.x, pos.y), rend.glyph);
 
-                    } else if seer.seen.contains_key(&(pos.x, pos.y)) {
-                        if let Some(glyph) = seer.seen.get(&(pos.x, pos.y)) {                        
-                            Self::render(camera_position, *glyph, seen_fg_color, Some(seen_bg_color), &pos, &mut data.root, fov_map);
+                        } else if seer.seen.contains_key(&(pos.x, pos.y)) {
+                            if let Some(glyph) = seer.seen.get(&(pos.x, pos.y)) {                        
+                                Self::render(
+                                    camera_position, 
+                                    *glyph, 
+                                    seen_fg_color, 
+                                    Some(seen_bg_color), 
+                                    &pos, 
+                                    &mut data.root, 
+                                    fov_map);
+                            }
                         }
                     }
-                }
 
                 // ...then everything else.
                 for (ent, rend, pos, _on_floor, _floor) in (&data.entities, &data.renderables, &data.positions, !&data.floors, !&data.on_floors).join() {
                     if fov_map.is_in_fov(pos.x, pos.y) {
-                        Self::render(camera_position, rend.glyph, rend.fg_color, rend.bg_color, &pos, &mut data.root, fov_map);
-                        if let Some(actor) = &data.actors.get(ent) {} else { seer.seen.insert((pos.x, pos.y), rend.glyph); }
-                    
+                        Self::render(
+                            camera_position, 
+                            rend.glyph, 
+                            rend.fg_color, 
+                            rend.bg_color, 
+                            &pos, 
+                            &mut data.root, 
+                            fov_map);
+
+                        if &data.actors.get(ent) == &Option::<&Actor>::None { 
+                            seer.seen.insert((pos.x, pos.y), rend.glyph); 
+                        }
                     } else if seer.seen.contains_key(&(pos.x, pos.y)) {
                         if let Some(glyph) = seer.seen.get(&(pos.x, pos.y)) {                        
-                            Self::render(camera_position, *glyph, seen_fg_color, Some(seen_bg_color), &pos, &mut data.root, fov_map);
+                            Self::render(
+                                camera_position, 
+                                *glyph, 
+                                seen_fg_color, 
+                                Some(seen_bg_color), 
+                                &pos, 
+                                &mut data.root, 
+                                fov_map);
                         }
                     }              
                 }
 
                 if data.game_state.debug {
                     data.root.print(0, 0, format!("{}, {}", pos.x, pos.y));
+                    data.root.print(0, 1, format!("{}, {}", camera_position.0, camera_position.1));
                     for x in 0..SCREEN_WIDTH {
                         for y in 0..SCREEN_HEIGHT {
                             let mut world_pos = Self::get_world_coordinates((x, y), camera_position);
@@ -170,11 +226,10 @@ impl<'a> System<'a> for Render {
                         }
                     }
 
-                    for (ent, _rend, pos, actor, name) in (&data.entities, &data.renderables, &data.positions, &data.actors, &data.names).join() {
+                    for (ent, _rend, pos, _actor) in (&data.entities, &data.renderables, &data.positions, &data.actors).join() {
                         let rend_pos = Self::get_screen_coordinates(pos, camera_position);
                         if rend_pos.0 < 0 || rend_pos.0 >= SCREEN_WIDTH { continue };
                         if rend_pos.1 < 0 || rend_pos.1 >= SCREEN_HEIGHT { continue };
-                        // data.root.print(rend_pos.0, rend_pos.1 + 1, format!("{}\n{}\nscreen center: {}, {}\nworld pos: {}, {}\nrend pos: {}, {}\ncamera pos: {}, {}", name.name, actor.fatigue, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, pos.x, pos.y, rend_pos.0, rend_pos.1, camera_position.0, camera_position.1));
                         if let Some(_turn) = &data.my_turns.get(ent) {
                             data.root.set_char_background(rend_pos.0, rend_pos.1, colors::GREEN, BackgroundFlag::Add);
                         }

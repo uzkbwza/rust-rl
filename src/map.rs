@@ -42,14 +42,18 @@ impl ActorMap {
 
 #[derive(Debug)]
 pub struct EntityMap {
-    pub actors: ActorMap
+    pub actors: ActorMap,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl EntityMap {
     pub fn new(width: usize, height: usize) -> Self {
         let mut actors = ActorMap::new(width, height);
         EntityMap {
-            actors
+            actors,
+            width,
+            height,
         }
     }
 }
