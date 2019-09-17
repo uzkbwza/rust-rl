@@ -4,19 +4,20 @@ use crate::systems::ai::AiType;
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 use tcod::colors;
+use tcod::chars;
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
         .with(Name::new("Player"))
-        .with(Seeing::new(20))
+        .with(Seeing::new(15))
         .with(Position::new(x,y))
-        .with(Renderable::new('@', colors::WHITE))
+        .with(Renderable::new('@', colors::WHITE, None))
         .with(Camera{})
         .with(CostMultiplier { multiplier: 1.0 })
         // .with(Corporeal::new(10))
         .with(Actor::new())
         .with(PlayerControl{})
-        .with(Stats::new(10,12,10))
+        .with(Stats::new(10,16,10))
         .build()
 }
 
@@ -27,27 +28,19 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
 
-    let possible_colors = [
-        colors::GREEN,
-        colors::DARK_GREEN,
-        colors::DARKER_GREEN,
-        colors::LIGHT_GREEN,
-        colors::LIGHTER_GREEN,
-        colors::LIGHTEST_GREEN,
-    ];
+    let color = colors::Color::new(rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
     
-    let chars = "Zz";
+    let chars = "obcdfsrxvlgZhq";
     let random_char = chars
         .chars()
         .choose(&mut rng)
         .unwrap();
 
-    let color = *possible_colors.choose(&mut rng).unwrap();
     world.create_entity()
         .with(Name::new("Zombie"))
         .with(Seeing::new(10))
         .with(Position::new(x,y))
-        .with(Renderable::new(random_char, color))
+        .with(Renderable::new(random_char, color, None))
         // .with(Corporeal::new(10))
         .with(CostMultiplier { multiplier: 1.0 })
         .with(Actor::new())
@@ -59,25 +52,32 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
 
 pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let mut rng = rand::thread_rng();
-    let brightness: i16 = 40;
-    let variation: i16 = 15;
-    let chars = ",.\' ";
+    let brightness: i16 = 20;
+    let variation: i16 = 5;
+    let chars = "rn.,` ";
     let random_char = chars
         .chars()
         .choose(&mut rng)
         .unwrap();
-    let r = (0 + rng.gen_range(0, variation)) as u8;
+    let r = (5 + rng.gen_range(0, variation)) as u8;
     let g = (brightness + rng.gen_range(-variation, variation)) as u8;
-    let b = (0 + rng.gen_range(0, variation)) as u8;
+    let b = (5 + rng.gen_range(0, variation)) as u8;
     let color = colors::Color {
         r,
         g,
         b,
     };
 
+    let bg_color = colors::Color {
+        r: r - 5,
+        g: g - 5,
+        b: b - 5,
+
+    };
+
     world.create_entity()
         .with(Position::new(x,y))
-        .with(Renderable::new(random_char, color))
+        .with(Renderable::new(random_char, color, Some(bg_color)))
         .with(Floor{})
         .build();
 }
@@ -85,7 +85,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 pub fn create_wall(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x, y))
-        .with(Renderable::new('#', colors::WHITE))
+        .with(Renderable::new('#', colors::WHITE, Some(colors::DARK_GREY)))
         .with(BlockSight)
         .with(BlockMovement{})
         .with(Collidable)

@@ -9,6 +9,7 @@ use crate::command::{Command, CommandEvent};
 use crate::map::{EntityMap, View};
 use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
+use std::num;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum KeyEvent {
@@ -179,9 +180,22 @@ impl<'a> System<'a> for Input {
 
                     // make sure bumping into walls doesnt take a turn
                     if let (Some(Command::Move(dir)), Some(pos)) = (Some(command_event.command), data.positions.get(ent)) {
+                        let fov_map = data.view.map.lock().unwrap();
                         let dpos = Dir::dir_to_pos(dir);
-                        let dest = (dpos.0 + pos.x, dpos.1 + pos.y);
-                        if !data.view.map.lock().unwrap().is_walkable(dest.0, dest.0)|| dir == Dir::Nowhere{
+                        let dest = (
+                            match dpos.0 + pos.x {
+                                x if x >= fov_map.size().0 => fov_map.size().0 - 1,
+                                x if x < 0 => 0,
+                                _ => dpos.0 + pos.x
+                            }, 
+                            match dpos.1 + pos.y {
+                                y if y >= fov_map.size().1 => fov_map.size().1 - 1,
+                                y if y < 0 => 0,
+                                _ => dpos.1 + pos.y
+                            }, 
+                        );
+                        
+                        if fov_map.is_walkable(dest.0, dest.1) || dir == Dir::Nowhere{
                             data.world_updater.remove::<MyTurn>(ent);
                             data.game_state.player_turn = false;
                         }

@@ -115,12 +115,13 @@ impl Position {
 #[storage(VecStorage)]
 pub struct Renderable {
     pub glyph: char,
-    pub color: colors::Color,
+    pub fg_color: colors::Color,
+    pub bg_color: Option<colors::Color>,
 }
 
 impl Renderable {
-    pub fn new(glyph: char, color: colors::Color) -> Self {
-        Renderable { glyph, color }
+    pub fn new(glyph: char, fg_color: colors::Color, bg_color: Option<colors::Color>) -> Self {
+        Renderable { glyph, fg_color, bg_color }
     }
 }
 

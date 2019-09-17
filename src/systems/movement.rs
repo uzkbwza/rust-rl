@@ -176,30 +176,32 @@ impl<'a> System<'a> for Movement {
             let ent = move_command.entity;
             if let Some(pos) = data.positions.get_mut(ent) {
                 let dest = (pos.x + move_command.dx, pos.y + move_command.dy);
-                if data.entity_map.actors.get(&dest) == None || data.collidables.get(ent) == None {
-                    let move_event = Self::move_position(ent, pos, move_command);
-                    data.move_event_channel.single_write(move_event);
+                
+                if !view.is_walkable(dest.0, dest.1) { continue }
+                if data.entity_map.actors.contains_actor(dest.0, dest.1) { continue }
 
-                    // diagonals cost should be more
-                    let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
-                        2 => f32::sqrt(2.0),
-                        1 => 1.0,
-                        _ => 0.0,
-                    };
+                let move_event = Self::move_position(ent, pos, move_command);
+                data.move_event_channel.single_write(move_event);
 
-                    if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                        cost_multiplier.multiplier = cost
-                    }
-                    let (x, y) = (move_event.start_x, move_event.start_y);
-                    let (dx, dy) = (move_event.dest_x, move_event.dest_y);
-                    // remove collider from previous position
+                // diagonals cost should be more
+                let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
+                    2 => f32::sqrt(2.0),
+                    1 => 1.0,
+                    _ => 1.0,
+                };
 
-                    data.entity_map.actors.remove(&(x, y));
-                    // view.set(x, y, true, true);
-
-                    data.entity_map.actors.insert((dx, dy), ent);
-                    // view.set(dx, dy, blocks_sight, collidable);
+                if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
+                    cost_multiplier.multiplier = cost
                 }
+                let (x, y) = (move_event.start_x, move_event.start_y);
+                let (dx, dy) = (move_event.dest_x, move_event.dest_y);
+                // remove collider from previous position
+
+                data.entity_map.actors.remove(x, y);
+                // view.set(x, y, true, true);
+
+                data.entity_map.actors.insert(dx, dy, ent);
+                // view.set(dx, dy, blocks_sight, collidable);
             }
         }
     }
@@ -217,15 +219,11 @@ impl<'a> System<'a> for Movement {
     }
 }
 
-pub struct CollisionMapUpdater {
-    initialized: bool,
-}
+pub struct CollisionMapUpdater;
 
 impl CollisionMapUpdater {
     pub fn new() -> Self {
-        CollisionMapUpdater { 
-            initialized: false
-        }
+        CollisionMapUpdater {}
     }
 }
 
@@ -256,12 +254,12 @@ impl<'a> System<'a> for CollisionMapUpdater {
                 blocks_sight = true;
             }
             if let Some(_movement_blocker) = data.movement_blockers.get(ent) {
-                view.set(pos.x, pos.y, false, false);
+                view.set(pos.x, pos.y, !blocks_sight, false);
             } else {
                 view.set(pos.x, pos.y, !blocks_sight, true);
             }
             if let Some(_actor) = data.actors.get(ent) {
-                map.actors.insert((pos.x, pos.y), ent);
+                map.actors.insert(pos.x, pos.y, ent);
             }
         }
     }

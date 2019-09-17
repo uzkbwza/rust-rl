@@ -10,18 +10,17 @@ extern crate shrev;
 use specs::prelude::*;
 
 use rand::prelude::*;
-use rand::seq::SliceRandom;
 
 use tcod::console::*;
 use tcod::map::Map as TcodMap;
 
 use std::sync::{Arc, Mutex};
 
-pub const SCREEN_WIDTH: i32 = 84;
-pub const SCREEN_HEIGHT: i32 = 44;
+pub const SCREEN_WIDTH: i32 = 80;
+pub const SCREEN_HEIGHT: i32 = 46;
 
-pub const MAP_HEIGHT: i32 = 512;
-pub const MAP_WIDTH: i32 = 512;
+pub const MAP_WIDTH: i32 = 80;
+pub const MAP_HEIGHT: i32 = 46;
 
 use std::env;
 
@@ -65,17 +64,17 @@ fn main() {
     let game_state = GameState { end: false, player_turn: false, real_time: false, debug: DEBUG };
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("terminal2.png", FontLayout::AsciiInCol)
+        .font("terminal.png", FontLayout::AsciiInCol)
         .init();
         
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
-    let map = map::EntityMap::new();
+    let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
     world.insert(game_state);
     world.insert(root);
     world.insert(map);
     world.insert(view);
 
-    let player = entities::create_player(&mut world, 0, 0);
+    let player = entities::create_player(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2);
     
     let mut dummies_list = vec![player]; 
     let mut rng = thread_rng();
@@ -88,9 +87,19 @@ fn main() {
             }
         }
     }
-    entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 20);
 
-    for _ in 0..1000 {
+    for y in 0..MAP_HEIGHT {
+        entities::create_wall(&mut world, MAP_WIDTH - 1, y);
+        entities::create_wall(&mut world, 0, y);
+    }
+    for x in 0..MAP_WIDTH {
+        entities::create_wall(&mut world, x, 0);
+        entities::create_wall(&mut world, x, MAP_HEIGHT - 1);
+    }
+
+    entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 3);
+
+    for _ in 0..100 {
         dummies_list.push(entities::create_dummy(&mut world, player));
     }
 

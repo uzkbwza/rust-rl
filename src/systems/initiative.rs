@@ -38,7 +38,7 @@ impl<'a> System<'a> for Initiative {
                     if actor.fatigue < 0.0 { actor.fatigue = 0.0 };
                 } else {
                     if let Some(stats_list) = data.stats_lists.get(ent) {
-                        actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(stats_list.agility);
+                        actor.fatigue = MAX_FATIGUE / Self::get_initiative_from_agility(stats_list.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
                             actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32;
                         }

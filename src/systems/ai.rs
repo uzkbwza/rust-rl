@@ -31,10 +31,18 @@ impl Ai {
             if let Some(dest) = data.positions.get(target.entity) {
                 
                 let mut fov_map = data.view.map.lock().unwrap();
-                // fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+
+
+                let distance = f64::sqrt(((dest.x - pos.x).pow(2) + (dest.y - pos.y).pow(2)) as f64) as i32;
+                
+                if distance > seer.fov {
+                    return Dir::Nowhere;
+                }
+
+                fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
 
                 if !fov_map.is_in_fov(dest.x, dest.y) {
-                    return Dir::Nowhere
+                    return Dir::Nowhere;
                 }
 
                 // copied this from tutorial lol
