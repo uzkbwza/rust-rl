@@ -9,7 +9,7 @@ use tcod::chars;
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
         .with(Name::new("Player"))
-        .with(Seeing::new(15))
+        .with(Seeing::new(30))
         .with(Position::new(x,y))
         .with(Renderable::new('@', colors::WHITE, None))
         .with(Camera{})
@@ -23,7 +23,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
 
 pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let mut rng = rand::thread_rng();
-    let stats: (i32, i32, i32) = (10,rng.gen_range(1,5),10);
+    let stats: (i32, i32, i32) = (10,rng.gen_range(1,15),10);
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
@@ -38,7 +38,7 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
 
     world.create_entity()
         .with(Name::new("Zombie"))
-        .with(Seeing::new(10))
+        .with(Seeing::new(rng.gen_range(1,20)))
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None))
         // .with(Corporeal::new(10))

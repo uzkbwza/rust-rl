@@ -29,15 +29,44 @@ impl Ai {
         }
     }
 
-    fn choose_closest_point(start: (i32, i32), dest: (i32, i32), fov_map: TcodMap, entity_map: &EntityMap) -> (i32, i32) {
-        let mut rankings = Array2D::filled_with(1, entity_map.width, entity_map.height);
-        for x in 0..entity_map.width {
-            for y in 0..entity_map.height {
-                
+    fn rank_distance(start: (i32, i32), dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, mut pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> Option<(i32, (i32, i32))> {
+        let x = point.0;
+        let y = point.1;
+        pathfinder.find((x, y));
+        let num_steps = pathfinder.len();
+        // println!("{}", num_steps);
+        let mut ranking = (((dest.0 - x).pow(2) + (dest.1 - y).pow(2)) as f32).sqrt() as i32 ;
+        if !fov_map.is_walkable(x as i32, y as i32) {
+            return None
+        }
+
+        // if entity_map.actors.contains_actor(x as i32, y as i32) {
+        //     return None
+        // }
+        Some((ranking, (x, y)))
+    }
+
+    fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_map: &TcodMap, mut pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> (i32, i32) {
+        let mut rankings = Vec::new();
+        for x in (start.0 - range)..(start.0 + range) + 1  {
+            for y in (start.1 - range)..(start.1 + range) + 1 {
+                if x <= 0 ||
+                 y <= 0 || x >= entity_map.width as i32 || y >= entity_map.height as i32 {
+                    continue
+                }
+                if let Some(ranking) = Self::rank_distance(start, dest, (x, y), fov_map, pathfinder, entity_map) {
+                    rankings.push(ranking);
+                }
             }
         }
-        (0, 0)
+        if rankings.is_empty() { return start }
+        rankings.sort_by(|a, b| a.0.cmp(&b.0));
+        
+        // println!("{:?}", rankings[0]);
+        let closest = ((rankings[0].1).0 as i32, (rankings[0].1).1 as i32);
+        closest
     }
+
 
     fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
         if let (Some(target), Some(pos), Some(seer)) = (data.targets.get(entity), data.positions.get(entity), data.seers.get(entity)) {
@@ -46,12 +75,13 @@ impl Ai {
                 let mut fov_map = data.view.map.lock().unwrap();
 
                 fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+                fov_map.set(pos.x, pos.y, true, true);
 
                 let mut step_pos = (pos.x, pos.y);
 
                 let mut pathfinder = Dijkstra::new_from_map(fov_map.clone(), f32::sqrt(2.0));
                 pathfinder.compute_grid(step_pos);
-                let dest_point = Self::choose_closest_point((pos.x, pos.y), (dest.x, dest.y), fov_map.clone(), &data.entity_map);
+                let dest_point = Self::choose_close_point(20, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
 
                 if pathfinder.find((dest_point.0, dest_point.1)) {
                     if let Some(step) = pathfinder.get(0) {
