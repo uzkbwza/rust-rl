@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, Collidable, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor};
+use crate::components::{Position, Collidable, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor, flags::requests::*};
 use crate::map::View;
 
 // use crate::systems::control::{CommandEvent};
@@ -52,31 +52,13 @@ impl Dir {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct MoveCommand {
-    entity: Entity,
-    dx: i32,
-    dy: i32,
-}
-
-impl MoveCommand {
-    pub fn new(entity: Entity, dx: i32, dy: i32) -> Self {
-
-        MoveCommand {
-            entity,
-            dx,
-            dy,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct MoveEvent {
     pub entity: Entity,
     pub start_x: i32,
     pub start_y: i32,
     pub dest_x: i32,
     pub dest_y: i32,
-    }
+}
 
 
 impl MoveEvent {
@@ -107,18 +89,10 @@ impl CollisionEvent {
     }
 }
 
-pub struct Movement {
-        pub move_command_reader: Option<ReaderId<MoveCommand>>
-}
+pub struct Movement;
 
 impl Movement {
-    pub fn new() -> Self {
-        Movement { 
-            move_command_reader: None, 
-        }
-    }
-
-    fn move_position(entity: Entity, position: &mut Position, move_command: &MoveCommand) -> MoveEvent {
+    fn move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest) -> MoveEvent {
         let start_x = position.x;
         let start_y = position.y;
         position.x += move_command.dx;
@@ -152,36 +126,28 @@ pub struct MovementSystemData<'a> {
     pub entity_map: WriteExpect<'a, EntityMap>,
     pub floors: ReadStorage<'a, Floor>,
     pub view: WriteExpect<'a, View>,
+    pub world_updater: Read<'a, LazyUpdate>,
 
-    // read channels
-    pub move_command_channel: Read<'a, EventChannel<MoveCommand>>,
-
-    // write channels
-    pub move_event_channel: Write<'a, EventChannel<MoveEvent>>,
-    pub collide_event_channel: Write<'a, EventChannel<CollisionEvent>>,
+    // requests
+    pub move_requests: WriteStorage<'a, MoveRequest>,
+    pub attack_requests: WriteStorage<'a, AttackRequest>,
 }
 
 impl<'a> System<'a> for Movement {
     type SystemData = MovementSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let move_commands = data.move_command_channel
-            .read(self.move_command_reader
-            .as_mut()
-            .unwrap());
         
         let mut view = data.view.map.lock().unwrap();
         
-        for move_command in move_commands {
-            let ent = move_command.entity;
+        for (ent, move_request) in (&data.entities, &mut data.move_requests).join() {
+            data.world_updater.remove::<MoveRequest>(ent);
+
             if let Some(pos) = data.positions.get_mut(ent) {
-                let dest = (pos.x + move_command.dx, pos.y + move_command.dy);
+                let dest = (pos.x + move_request.dx, pos.y + move_request.dy);
                 
                 if !view.is_walkable(dest.0, dest.1) { continue }
-                if data.entity_map.actors.contains_actor(dest.0, dest.1) { continue }
-
-                let move_event = Self::move_position(ent, pos, move_command);
-                data.move_event_channel.single_write(move_event);
+                let move_event = Self::move_position(ent, pos, move_request);
 
                 // diagonals cost should be more
                 let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
@@ -204,18 +170,6 @@ impl<'a> System<'a> for Movement {
                 view.set(dx, dy, true, false);
             }
         }
-    }
-
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-        let move_event_channel: EventChannel<MoveEvent> = EventChannel::new();
-        let collision_event_channel: EventChannel<CollisionEvent> = EventChannel::new();
-        world.insert(move_event_channel);
-        world.insert(collision_event_channel);
-
-        self.move_command_reader = Some(world.
-            fetch_mut::<EventChannel<MoveCommand>>()
-            .register_reader());
     }
 }
 

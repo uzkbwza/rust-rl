@@ -2,6 +2,7 @@ use specs::prelude::*;
 use tcod::colors;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
+pub mod flags;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
@@ -81,11 +82,11 @@ pub struct CostMultiplier {
 // something that is destructible and physically exists
 pub struct Corporeal {
     pub max_hp: i32,
-    pub hp: i32
+    pub hp: i32,
 }
 
 impl Corporeal {
-    pub fn _new(max_hp: i32) -> Self {
+    pub fn new(max_hp: i32) -> Self {
         Corporeal {
             max_hp,
             hp: max_hp,
@@ -111,7 +112,7 @@ pub struct AiControl {
     pub ai_type: AiType,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
 #[storage(VecStorage)]
 pub struct Position{
     pub x: i32,

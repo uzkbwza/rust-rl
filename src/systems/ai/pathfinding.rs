@@ -49,9 +49,8 @@ pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
             
             let mut fov_map = data.view.map.lock().unwrap();
 
-            fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
             fov_map.set(pos.x, pos.y, true, true);
-
+            fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
             let mut step_pos = (pos.x, pos.y);
 
             let mut pathfinder = Dijkstra::new_from_map(fov_map.clone(), f32::sqrt(2.0));

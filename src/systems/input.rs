@@ -171,16 +171,13 @@ impl<'a> System<'a> for Input {
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
-                None => (),
                 
                 // player commands
-                Some(_) => {
+                Some(Command::Move(dir)) => {
                     // attach action component to player entity 
-                    let command_event = CommandEvent::new(command.unwrap(), ent);
-                    data.command_event_channel.single_write(command_event);
+                    let mut command_event = CommandEvent::new(command.unwrap(), ent);
 
-                    // make sure bumping into walls doesnt take a turn
-                    if let (Some(Command::Move(dir)), Some(pos)) = (Some(command_event.command), data.positions.get(ent)) {
+                    if let Some(pos) = data.positions.get(ent) {
                         let fov_map = data.view.map.lock().unwrap();
                         let dpos = Dir::dir_to_pos(dir);
                         let dest = (
@@ -195,13 +192,22 @@ impl<'a> System<'a> for Input {
                                 _ => dpos.1 + pos.y
                             }, 
                         );
-                        
-                        if fov_map.is_walkable(dest.0, dest.1) || dir == Dir::Nowhere{
-                            data.world_updater.remove::<MyTurn>(ent);
-                            data.game_state.player_turn = false;
-                        }
+
+                        if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
+    
+                            // attack enemy instead if closeby
+                            if let Some(target_entity) = data.entity_map.actors.get(dest.0, dest.1) {
+                               command_event = CommandEvent::new(Command::Attack(dir), ent);
+                            
+                            // make sure bumping into walls doesnt take a turn
+                            } else { continue }
+                        } 
+                        data.game_state.player_turn = false;
+                        data.world_updater.remove::<MyTurn>(ent);
+                        data.command_event_channel.single_write(command_event)
                     }
                 },
+                _ => (),
             }
         }
     }

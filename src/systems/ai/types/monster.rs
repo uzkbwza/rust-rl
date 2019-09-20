@@ -12,7 +12,19 @@ pub struct Monster;
 impl Thinking for Monster {
     fn get_command(entity: Entity, data: &AiSystemData) -> Option<Command> {
         if Self::can_target_player(entity, data) {
-            return Some(Command::Move(pathfinding::path_to_target(entity, data)))
+            if let (Some(pos), Some(target)) = (data.positions.get(entity), data.targets.get(entity)) {
+                if let Some(target_pos) = data.positions.get(target.entity) {
+                    let dx = target_pos.x - pos.x;
+                    let dy = target_pos.y - pos.y;
+                    println!("{:?}", (dx, dy));
+                    
+                    // check if adjacent
+                    if i32::abs(dx) <= 1 && i32::abs(dy) <= 1 {
+                        return Some(Command::Attack(Dir::pos_to_dir((dx, dy))))
+                    }
+                    return Some(Command::Move(pathfinding::path_to_target(entity, data)))
+                }
+            }
         }
         return Some(Command::Move(Dir::Nowhere))
     }

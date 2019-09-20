@@ -22,7 +22,7 @@ impl Initiative {
     // some magic numbers in the player stats rn considering they dont do anything yet. will hopefully
     // flesh them out a bit more
     fn get_initiative_from_agility(agility: i32) -> f32 {
-        (agility as f32)
+        (agility as f32) * 3.0
     }
 }   
 
@@ -36,7 +36,7 @@ impl<'a> System<'a> for Initiative {
                     actor.fatigue -= speed;
                     if actor.fatigue < 0.0 { actor.fatigue = 0.0 };
                 } else {
-                        actor.fatigue = MAX_FATIGUE / Self::get_initiative_from_agility(actor.agility);
+                        actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(actor.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
                             actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32; }
                     data.world_updater.insert(ent, MyTurn);

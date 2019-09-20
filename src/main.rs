@@ -39,6 +39,31 @@ pub struct GameState {
     pub debug: bool,
 }
 
+pub struct MessageLog {
+    messages: Vec<String>,
+    capacity: usize,
+}
+
+impl MessageLog {
+    pub fn new(capacity: usize) -> Self {
+        MessageLog {
+            messages: Vec::new(),
+            capacity
+        }
+    }
+
+    pub fn log(&mut self, string: String) {
+        self.messages.insert(0, string);
+    }
+
+    pub fn pop(&mut self) -> Option<String> {
+        match self.messages.len() {
+            0 => None,
+            _ => Some(self.messages.remove(0))
+        }
+    }
+}
+
 fn main() {
     let mut DEBUG = false;
     let args: Vec<String> = env::args().collect();
@@ -53,10 +78,10 @@ fn main() {
         .with(systems::input::Input::new(), "input_sys", &[]) 
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["input_sys", "ai_sys"])
-        .with(systems::movement::Movement::new(), "movement_sys", &["action_sys"])
+        .with(systems::movement::Movement, "movement_sys", &["action_sys"])
+        .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
         .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &["movement_sys", "action_sys"])
-        .with_barrier()
-        .with_thread_local(systems::render::Render::new());
+        .with(systems::render::Render::new(), "render_sys", &[]);
 
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
@@ -64,19 +89,28 @@ fn main() {
     let game_state = GameState { end: false, player_turn: false, real_time: false, debug: DEBUG };
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("terminal2.png", FontLayout::AsciiInCol)
+        .font("terminal.png", FontLayout::AsciiInCol)
         .init();
         
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+    let message_log = MessageLog::new(10);
     world.insert(game_state);
     world.insert(root);
     world.insert(map);
     world.insert(view);
+    world.insert(message_log);
 
     let player = entities::create_player(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2);
     
+    let mut dummies_list = vec![player]; 
     let mut rng = thread_rng();
+
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            entities::create_floor(&mut world, x, y);
+        }
+    }
 
     for y in 0..MAP_HEIGHT {
         entities::create_wall(&mut world, MAP_WIDTH - 1, y);
@@ -89,8 +123,8 @@ fn main() {
 
     entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
-    for _ in 0..100 {
-        entities::create_dummy(&mut world, player);
+    for _ in 0..50 {
+        dummies_list.push(entities::create_dummy(&mut world, player));
     }
 
     loop {
