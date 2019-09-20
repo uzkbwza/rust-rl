@@ -1,8 +1,7 @@
 use specs::prelude::*;
 use crate::components::*;
-use crate::systems::ai::AiType;
+use crate::systems::ai::types::AiType;
 use rand::prelude::*;
-use rand::seq::SliceRandom;
 use tcod::colors;
 use tcod::chars;
 
@@ -15,15 +14,14 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Camera{})
         .with(CostMultiplier { multiplier: 1.0 })
         // .with(Corporeal::new(10))
-        .with(Actor::new())
+        .with(Actor::from_stats(15, 15, 15))
         .with(PlayerControl{})
-        .with(Stats::new(10,16,10))
         .build()
 }
 
 pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let mut rng = rand::thread_rng();
-    let stats: (i32, i32, i32) = (10,rng.gen_range(1,15),10);
+    let stats: (i32, i32, i32) = (10,rng.gen_range(10, 14),10);
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
@@ -37,16 +35,15 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
         .unwrap();
 
     world.create_entity()
-        .with(Name::new("Zombie"))
-        .with(Seeing::new(rng.gen_range(1,20)))
+        .with(Name::new("Dummy"))
+        .with(Seeing::new(20))
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None))
         // .with(Corporeal::new(10))
         .with(CostMultiplier { multiplier: 1.0 })
-        .with(Actor::new())
-        .with(Target { entity })
-        .with(AiControl { ai_type: AiType::Dummy })
-        .with(Stats::new(stats.0, stats.1, stats.2))
+        .with(Actor::from_stats(stats.0, stats.1, stats.2))
+        // .with(Target { entity })
+        .with(AiControl { ai_type: AiType::Monster })
         .build()
 }
 
@@ -77,6 +74,9 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 
     world.create_entity()
         .with(Position::new(x,y))
+        // .with(PlayerControl{})
+        // .with(Actor::new())
+        // .with(Stats::new(10,16,10))
         .with(Renderable::new(random_char, color, Some(bg_color)))
         .with(Floor{})
         .build();

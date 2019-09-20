@@ -1,6 +1,6 @@
 use specs::prelude::*;
 // use shrev::{EventChannel, ReaderId};
-use crate::components::{Actor, CostMultiplier, Stats, MyTurn, PlayerControl};
+use crate::components::{Actor, CostMultiplier, MyTurn, PlayerControl};
 
 // todo: make actual initiative values a little more procedural and meaningful 
 const MAX_FATIGUE: f32 = 100.0;
@@ -12,7 +12,6 @@ pub struct InitiativeSystemData<'a> {
     cost_multipliers: WriteStorage<'a, CostMultiplier>,
     players: ReadStorage<'a, PlayerControl>,
     my_turns: WriteStorage<'a, MyTurn>,
-    stats_lists: ReadStorage<'a, Stats>,
     world_updater: Read<'a, LazyUpdate>,
     game_state: WriteExpect<'a, crate::GameState>,
 
@@ -37,14 +36,9 @@ impl<'a> System<'a> for Initiative {
                     actor.fatigue -= speed;
                     if actor.fatigue < 0.0 { actor.fatigue = 0.0 };
                 } else {
-                    if let Some(stats_list) = data.stats_lists.get(ent) {
-                        actor.fatigue = MAX_FATIGUE / Self::get_initiative_from_agility(stats_list.agility);
+                        actor.fatigue = MAX_FATIGUE / Self::get_initiative_from_agility(actor.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32;
-                        }
-                    } else {
-                        actor.fatigue = MAX_FATIGUE;
-                    }
+                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32; }
                     data.world_updater.insert(ent, MyTurn);
 
                     // if Player gets MyTurn component, pause the game

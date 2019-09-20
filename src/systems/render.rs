@@ -3,17 +3,21 @@ use shrev::{EventChannel, ReaderId};
 use tcod::console::*;
 use tcod::colors;
 use tcod::input;
-use crate::components::{PlayerControl, Position, Floor, OnFloor, Renderable, Camera, Name, Actor, Seeing, MyTurn};
+use crate::components::{AiControl, PlayerControl, Position, Floor, OnFloor, Renderable, Camera, Name, Actor, Seeing, MyTurn};
 use crate::systems::movement::MoveEvent;
 use crate::map::{EntityMap, View};
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
 use tcod::map::FovAlgorithm;
 
+pub enum RenderError {
+    OutOfBounds
+}
 
 #[derive(SystemData)]
 pub struct RenderData<'a> {
         entities: Entities<'a>,
         renderables: ReadStorage<'a, Renderable>,
+        ais: ReadStorage<'a, AiControl>,
         my_turns: ReadStorage<'a, MyTurn>,
         names: ReadStorage<'a, Name>,
         positions: ReadStorage<'a, Position>,
@@ -39,12 +43,18 @@ impl Render {
             move_event_reader: None,
         }
     }
+
+
     pub fn get_screen_coordinates(pos: &Position, camera_pos: (i32, i32)) -> (i32, i32) {
         let screen_center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-        (
-            screen_center.0 + pos.x - camera_pos.0, 
-            screen_center.1 + pos.y - camera_pos.1
-            )
+        (screen_center.0 + pos.x - camera_pos.0, screen_center.1 + pos.y - camera_pos.1)
+    }
+    
+    pub fn is_on_screen(coords: (i32, i32)) -> bool {
+        if coords.0 >= 0 && coords.0 <= SCREEN_WIDTH && coords.1 >= 0 && coords.1 <= SCREEN_HEIGHT {
+            return true
+        }
+        false
     }
 
     pub fn get_world_coordinates(rend_pos: (i32, i32), camera_pos: (i32, i32)) -> (i32, i32) {
@@ -74,6 +84,7 @@ impl<'a> System<'a> for Render {
     fn run(&mut self, mut data: Self::SystemData) {
         // determine camera position
         let mut camera_position = (0, 0);
+        tcod::system::set_fps(60);
 
         if SCREEN_WIDTH < MAP_WIDTH {
             for (pos, _camera) in (&data.positions, &data.cameras).join() {
@@ -99,10 +110,11 @@ impl<'a> System<'a> for Render {
             }
         } else { camera_position.1 = SCREEN_HEIGHT / 2 }
 
+        let mut fov_map = &mut data.view.map.lock().unwrap();
+        
         for (ent, player, seer, pos) in (&data.entities, &data.players, &mut data.seers, &data.positions).join() {
-            if data.game_state.player_turn {
+            if data.game_state.player_turn || data.game_state.debug {
                 data.root.clear();
-                let mut fov_map = &mut data.view.map.lock().unwrap();
                 let map = &data.entity_map;
                 let radius = seer.fov;
                 let seen_fg_color = colors::Color::new(10, 10, 15);
@@ -110,7 +122,7 @@ impl<'a> System<'a> for Render {
                 fov_map.compute_fov(pos.x, pos.y, radius, true, FovAlgorithm::Basic);
 
                 // render floors first...
-                tcod::system::set_fps(60);
+               
                 for (rend, pos, _floor) in (&data.renderables, &data.positions, &data.floors).join() {
                     if fov_map.is_in_fov(pos.x, pos.y) {
                         Self::render(
@@ -231,7 +243,7 @@ impl<'a> System<'a> for Render {
                         if rend_pos.0 < 0 || rend_pos.0 >= SCREEN_WIDTH { continue };
                         if rend_pos.1 < 0 || rend_pos.1 >= SCREEN_HEIGHT { continue };
                         if let Some(_turn) = &data.my_turns.get(ent) {
-                            data.root.set_char_background(rend_pos.0, rend_pos.1, colors::GREEN, BackgroundFlag::Add);
+                            data.root.set_char_background(rend_pos.0, rend_pos.1, colors::GREEN, BackgroundFlag::Set);
                         }
                     }
                 }
@@ -239,6 +251,26 @@ impl<'a> System<'a> for Render {
                 // not sure WHY i have to do this... but locking the FPS seems to slow the whole game down. 
                 // chalking that up to another weird tcod thing.
                 tcod::system::set_fps(1000000);
+            }
+        }
+
+        if data.game_state.debug {
+            for (ai, pos, seer) in (&data.ais, &data.positions, &mut data.seers).join() {
+                fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+                for x in 0..SCREEN_WIDTH {
+                    for y in 0..SCREEN_HEIGHT {
+                        let world_coords = Self::get_world_coordinates((x,y), camera_position);
+                        if fov_map.is_in_fov(world_coords.0, world_coords.1) {
+                            let mut bg = data.root.get_char_background(x, y);
+                            if bg.r <= 200 {
+                                bg.r += 55
+                            } else {
+                                bg.r = 255
+                            }
+                            data.root.set_char_background(x, y, bg, BackgroundFlag::Set);
+                        }
+                    }
+                }
             }
         }
 

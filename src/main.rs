@@ -19,8 +19,8 @@ use std::sync::{Arc, Mutex};
 pub const SCREEN_WIDTH: i32 = 80;
 pub const SCREEN_HEIGHT: i32 = 46;
 
-pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 46;
+pub const MAP_WIDTH: i32 = 250;
+pub const MAP_HEIGHT: i32 = 250;
 
 use std::env;
 
@@ -64,7 +64,7 @@ fn main() {
     let game_state = GameState { end: false, player_turn: false, real_time: false, debug: DEBUG };
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("terminal.png", FontLayout::AsciiInCol)
+        .font("terminal2.png", FontLayout::AsciiInCol)
         .init();
         
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
@@ -76,17 +76,7 @@ fn main() {
 
     let player = entities::create_player(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2);
     
-    let mut dummies_list = vec![player]; 
     let mut rng = thread_rng();
-
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
-            entities::create_floor(&mut world, x, y);
-            if rng.gen_range(0,1000) >= 999 && y != MAP_HEIGHT / 2 {
-                entities::create_wall(&mut world, x, y);
-            }
-        }
-    }
 
     for y in 0..MAP_HEIGHT {
         entities::create_wall(&mut world, MAP_WIDTH - 1, y);
@@ -100,7 +90,7 @@ fn main() {
     entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
     for _ in 0..100 {
-        dummies_list.push(entities::create_dummy(&mut world, player));
+        entities::create_dummy(&mut world, player);
     }
 
     loop {

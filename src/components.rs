@@ -1,6 +1,6 @@
 use specs::prelude::*;
 use tcod::colors;
-use crate::systems::ai::AiType;
+use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
 
 #[derive(Component, Default, Debug)]
@@ -11,6 +11,20 @@ pub struct PrintDebug;
 #[storage(VecStorage)]
 pub struct Target {
     pub entity: Entity,
+    pub give_up_timer: u32,
+}
+
+impl Target {
+    pub fn new(entity: Entity) -> Self {
+        Target {
+            entity,
+            give_up_timer: 15
+        }
+    }
+
+    pub fn decrement_timer(&mut self) {
+        self.give_up_timer = self.give_up_timer - 1
+    }
 }
 
 #[derive(Component, Debug)]
@@ -31,11 +45,28 @@ impl Name {
 #[storage(DenseVecStorage)]
 pub struct Actor {
     pub fatigue: f32,
+    pub strength: i32,
+    pub agility: i32, 
+    pub intelligence: i32,
 }
 
 impl Actor {
     pub fn new() -> Self {
-        Actor { fatigue: 0.0 }
+        Actor { 
+            fatigue: 0.0,
+            strength: 10,
+            agility: 10,
+            intelligence: 10
+        }
+    }
+
+    pub fn from_stats(strength: i32, agility: i32, intelligence: i32) -> Self {
+        Actor {
+            fatigue: 0.0,
+            strength,
+            agility,
+            intelligence
+        }
     }
 }
 
@@ -65,24 +96,6 @@ impl Corporeal {
 #[derive(Component, Default, Debug, PartialEq)]
 #[storage(NullStorage)]
 pub struct Collidable;
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Stats {
-    pub strength: i32,
-    pub agility: i32,
-    pub intelligence: i32,
-}
-
-impl Stats {
-    pub fn new(strength: i32, agility: i32, intelligence: i32) -> Self {
-        Stats {
-            strength,
-            agility,
-            intelligence,
-        }
-    }
-}
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
@@ -171,3 +184,7 @@ pub struct BlockSight;
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct BlockMovement;
+
+#[derive(Component, PartialEq, Default, Debug)]
+#[storage(NullStorage)]
+pub struct CanSeeTarget;
