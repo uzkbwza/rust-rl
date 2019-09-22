@@ -34,8 +34,8 @@ impl<'a> System<'a> for Attack {
             let attack_pos = Position::new(pos.x + attack_pos.0, pos.y + attack_pos.1);
             for (target_ent, target_pos, target_name, corporeal, _floor) in (&data.entities, &data.positions, &data.names, &mut data.corporeals, !&data.floors).join() {
                 if *target_pos == attack_pos {
-                    println!("attacking", );
-                    data.message_log.log(format!("{} attempts to attack {}", name.name, target_name.name));
+                    // println!("attacking", );
+                    data.message_log.log(format!("{} attacks {}", name.name, target_name.name));
                 }
             }
         }

@@ -46,6 +46,11 @@ impl Name {
 #[storage(DenseVecStorage)]
 pub struct Actor {
     pub fatigue: f32,
+    pub stats: Stats
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Stats {
     pub strength: i32,
     pub agility: i32, 
     pub intelligence: i32,
@@ -55,18 +60,22 @@ impl Actor {
     pub fn new() -> Self {
         Actor { 
             fatigue: 0.0,
-            strength: 10,
-            agility: 10,
-            intelligence: 10
+            stats: Stats {
+                strength: 10,
+                agility: 10,
+                intelligence: 10
+            }
         }
     }
 
     pub fn from_stats(strength: i32, agility: i32, intelligence: i32) -> Self {
         Actor {
             fatigue: 0.0,
-            strength,
-            agility,
-            intelligence
+            stats: Stats {
+                strength,
+                agility,
+                intelligence
+            }
         }
     }
 }
@@ -75,6 +84,12 @@ impl Actor {
 #[storage(VecStorage)]
 pub struct CostMultiplier {
     pub multiplier: f32,
+}
+
+impl CostMultiplier {
+    pub fn reset(&mut self) {
+        self.multiplier = 1.0;
+    }
 }
 
 #[derive(Component, Debug)]
@@ -93,10 +108,6 @@ impl Corporeal {
         }
     }
 }
-
-#[derive(Component, Default, Debug, PartialEq)]
-#[storage(NullStorage)]
-pub struct Collidable;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]

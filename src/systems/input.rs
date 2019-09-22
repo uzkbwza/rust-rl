@@ -200,7 +200,7 @@ impl<'a> System<'a> for Input {
                                command_event = CommandEvent::new(Command::Attack(dir), ent);
                             
                             // make sure bumping into walls doesnt take a turn
-                            } else { continue }
+                            } // else { continue }
                         } 
                         data.game_state.player_turn = false;
                         data.world_updater.remove::<MyTurn>(ent);

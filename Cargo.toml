@@ -16,7 +16,8 @@ shred-derive = "0.6.1"
 rand = "0.7.0"
 array2d = "0.2.1"
 num = "0.2.0"
-# rltk = { git = "https://github.com/thebracket/rltk_rs" }
+serde_json = "1.0"
+# rltk = { git = "https:Z(//github.com/thebracket/rltk_rs" }
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]

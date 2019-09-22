@@ -21,7 +21,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
 
 pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let mut rng = rand::thread_rng();
-    let stats: (i32, i32, i32) = (10,rng.gen_range(10, 14),10);
+    let stats: (i32, i32, i32) = (10,rng.gen_range(2, 14),10);
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
@@ -88,7 +88,7 @@ pub fn create_wall(world: &mut World, x: i32, y: i32) {
         .with(Renderable::new('#', colors::WHITE, Some(colors::DARK_GREY)))
         .with(BlockSight)
         .with(BlockMovement{})
-        .with(Collidable)
+        .with(Corporeal::new(100))
         .build();
 }
 

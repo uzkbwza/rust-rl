@@ -16,7 +16,7 @@ impl Thinking for Monster {
                 if let Some(target_pos) = data.positions.get(target.entity) {
                     let dx = target_pos.x - pos.x;
                     let dy = target_pos.y - pos.y;
-                    println!("{:?}", (dx, dy));
+                    // println!("{:?}", (dx, dy));
                     
                     // check if adjacent
                     if i32::abs(dx) <= 1 && i32::abs(dy) <= 1 {

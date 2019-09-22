@@ -22,4 +22,3 @@ impl CommandEvent {
         CommandEvent { command, entity }
     }
 }
-

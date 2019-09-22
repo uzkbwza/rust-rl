@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, Collidable, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor, flags::requests::*};
+use crate::components::{Position, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor, flags::requests::*};
 use crate::map::View;
 
 // use crate::systems::control::{CommandEvent};
@@ -122,7 +122,6 @@ pub struct MovementSystemData<'a> {
     pub entities: Entities<'a>,
     pub cost_multipliers: WriteStorage<'a, CostMultiplier>,
     pub positions: WriteStorage<'a, Position>,
-    pub collidables: ReadStorage<'a, Collidable>,
     pub entity_map: WriteExpect<'a, EntityMap>,
     pub floors: ReadStorage<'a, Floor>,
     pub view: WriteExpect<'a, View>,

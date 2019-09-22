@@ -14,6 +14,7 @@ pub struct InitiativeSystemData<'a> {
     my_turns: WriteStorage<'a, MyTurn>,
     world_updater: Read<'a, LazyUpdate>,
     game_state: WriteExpect<'a, crate::GameState>,
+    message_log: WriteExpect<'a, crate::MessageLog>,
 
 }
 
@@ -36,14 +37,16 @@ impl<'a> System<'a> for Initiative {
                     actor.fatigue -= speed;
                     if actor.fatigue < 0.0 { actor.fatigue = 0.0 };
                 } else {
-                        actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(actor.agility);
+                        actor.fatigue = MAX_FATIGUE - Self::get_initiative_from_agility(actor.stats.agility);
                         if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32; }
+                            actor.fatigue = (actor.fatigue as f32 * cost_multiplier.multiplier) as f32;
+                            cost_multiplier.reset();
+                        }
                     data.world_updater.insert(ent, MyTurn);
 
                     // if Player gets MyTurn component, pause the game
                     if let Some(_player) = data.players.get(ent) {
-                        data.game_state.player_turn = true
+                        data.game_state.player_turn = true;
                     }
                 }
             }
