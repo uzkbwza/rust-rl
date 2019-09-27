@@ -74,9 +74,6 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 
     world.create_entity()
         .with(Position::new(x,y))
-        // .with(PlayerControl{})
-        // .with(Actor::new())
-        // .with(Stats::new(10,16,10))
         .with(Renderable::new(random_char, color, Some(bg_color)))
         .with(Floor{})
         .build();

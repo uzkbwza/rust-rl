@@ -1,37 +1,8 @@
 use specs::prelude::*;
 use crate::BASE_TURN_TIME;
-// use shrev::{EventChannel, ReaderId};
 use crate::components::*;
 use crate::components::flags::ActionResult;
 use crate::Turn;
-
-
-// turn structure
-// --> TurnAllocator       | finds actors who have 0 fatigue and no MyTurn component, and gives them a MyTurn.
-// --> StartTurn           | 
-// --> PlayerStartTurn     | checks if player has MyTurn and pauses game.
-// --> Action              | gets actor actions and removes MyTurn
-    // --> Movement, attack, etc... | responsible for actors actually doing stuff on their own accord and generating ActionResults
-
-// --> EndTurn             | iterates through ActionResults, apply cost multiplier to actor's fatigue.
-// --> PlayerEndTurn       | checks if player lost MyTurn, resume process.
-
-
-// #[derive(SystemData)]
-// pub struct TimeSystemData<'a> {
-//     actors: WriteStorage<'a, Actor>,
-//     my_turns: WriteStorage<'a, MyTurn>,
-//     game_state: WriteExpect<'a, crate::GameState>,
-// }
-
-// pub struct Time;
-// impl<'a> System<'a> for Time {
-//     type SystemData = TimeSystemData<'a>;
-//     fn run(&mut self, mut data: Self::SystemData) {
-//         if !data.game_state.player_turn {
-//         }
-//     }
-// }
 
 #[derive(SystemData)]
 pub struct TurnAllocatorSystemData<'a> {
