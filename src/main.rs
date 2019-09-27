@@ -201,7 +201,7 @@ fn main() {
 
     entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
-    for _ in 0..500 {
+    for _ in 0..50 {
         dummies_list.push(entities::create_dummy(&mut world, player));
     }
 
