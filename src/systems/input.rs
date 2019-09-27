@@ -200,11 +200,10 @@ impl<'a> System<'a> for Input {
                                command_event = CommandEvent::new(Command::Attack(dir), ent);
                             
                             // make sure bumping into walls doesnt take a turn
-                            } // else { continue }
+                            } else { continue }
                         } 
-                        data.game_state.player_turn = false;
-                        data.world_updater.remove::<MyTurn>(ent);
-                        data.command_event_channel.single_write(command_event)
+                        data.command_event_channel.single_write(command_event);
+                        data.game_state.world_time.increment_player_turn();
                     }
                 },
                 _ => (),

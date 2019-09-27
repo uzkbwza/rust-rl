@@ -20,10 +20,10 @@ use thinking::Thinking;
 
 pub struct Ai;
 impl Ai {
-    fn get_command(entity: Entity, ai_type: AiType, data: &AiSystemData) -> Option<Command> {
+    fn get_command(entity: Entity, ai_type: AiType, data: &AiSystemData) -> Command {
         match ai_type {
             AiType::Monster => Monster::get_command(entity, data),
-            _ => None,
+            _ => Command::Move(Dir::Nowhere),
         }
     }
 }
@@ -57,15 +57,8 @@ impl <'a> System<'a> for Ai {
         for (ent, ai_unit, _my_turn, _position) in (&data.entities, &data.ai_units, &data.my_turns, &data.positions).join() {
             let ai_type = ai_unit.ai_type;
             let command = Self::get_command(ent, ai_type, &data);
-            match command {
-                None => (),
-                Some(_) => {
-                    // send out command event for the Action system to look at
-                    let command_event = CommandEvent::new(command.unwrap(), ent);
-                    data.command_event_channel.single_write(command_event);
-                }
-            }
-            data.world_updater.remove::<MyTurn>(ent);
+            let command_event = CommandEvent::new(command, ent);
+            data.command_event_channel.single_write(command_event);
         }
 
         for (entity, target, _sees_target, _my_turn) in (&data.entities, &mut data.targets, !&data.sees_targets, &data.my_turns).join() {

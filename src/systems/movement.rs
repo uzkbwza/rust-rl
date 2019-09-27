@@ -1,8 +1,12 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
 use crate::map::EntityMap;
-use crate::components::{Position, CostMultiplier, BlockSight, BlockMovement, Floor, OnFloor, Actor, flags::requests::*};
+use crate::components::*;
+use crate::components::flags::requests::*;
 use crate::map::View;
+use tcod::map::Map as TcodMap;
+use crate::BASE_TURN_TIME;
+use crate::components::flags::ActionResult;
 
 // use crate::systems::control::{CommandEvent};
 
@@ -92,21 +96,30 @@ impl CollisionEvent {
 pub struct Movement;
 
 impl Movement {
-    fn move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest) -> MoveEvent {
+    fn try_move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest, view: &TcodMap) -> MoveEvent {
         let start_x = position.x;
         let start_y = position.y;
-        position.x += move_command.dx;
-        position.y += move_command.dy;
-        if position.x >= crate::MAP_WIDTH {
-            position.x = 0;
-        } else if position.x <= -1 {
-            position.x = crate::SCREEN_WIDTH - 1;
+        let mut dest_x = position.x +  move_command.dx;
+        let mut dest_y = position.y + move_command.dy;
+        if !view.is_walkable(dest_x, dest_y) {
+            dest_x = start_x;
+            dest_y = start_y;
         }
-        if position.y >= crate::MAP_HEIGHT {
-            position.y = 0;
-        } else if position.y <= -1 {
-            position.y = crate::MAP_HEIGHT - 1;
+
+        if dest_x >= crate::MAP_WIDTH {
+            dest_x = 0;
+        } else if dest_x <= -1 {
+            dest_x = crate::SCREEN_WIDTH - 1;
         }
+        if dest_y >= crate::MAP_HEIGHT {
+            dest_y = 0;
+        } else if dest_y <= -1 {
+            dest_y = crate::MAP_HEIGHT - 1;
+        }
+
+        position.x = dest_x;
+        position.y = dest_y;
+
         MoveEvent::new(
             entity,
             start_x,
@@ -115,17 +128,23 @@ impl Movement {
             position.y,
         )
     }
+
+    fn get_cost(base: i32, modifier: f32) -> i32 {
+        (modifier * base as f32) as i32
+    }
 }
+
 
 #[derive(SystemData)]
 pub struct MovementSystemData<'a> {
     pub entities: Entities<'a>,
-    pub cost_multipliers: WriteStorage<'a, CostMultiplier>,
     pub positions: WriteStorage<'a, Position>,
     pub entity_map: WriteExpect<'a, EntityMap>,
     pub floors: ReadStorage<'a, Floor>,
     pub view: WriteExpect<'a, View>,
     pub world_updater: Read<'a, LazyUpdate>,
+    pub action_results: WriteStorage<'a, ActionResult>,
+    pub quicknesses: ReadStorage<'a, Quickness>,
 
     // requests
     pub move_requests: WriteStorage<'a, MoveRequest>,
@@ -141,23 +160,26 @@ impl<'a> System<'a> for Movement {
         
         for (ent, move_request) in (&data.entities, &mut data.move_requests).join() {
             data.world_updater.remove::<MoveRequest>(ent);
+            // println!("removed moverequest");
 
             if let Some(pos) = data.positions.get_mut(ent) {
+                // println!("got here");
                 let dest = (pos.x + move_request.dx, pos.y + move_request.dy);
-                
-                if !view.is_walkable(dest.0, dest.1) { continue }
-                let move_event = Self::move_position(ent, pos, move_request);
+
+                let mut move_event = Self::try_move_position(ent, pos, move_request, &view);
 
                 // diagonals cost should be more
-                let cost: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
+                let cost_modifier: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
                     2 => f32::sqrt(2.0),
                     1 => 1.0,
                     _ => 1.0,
                 };
 
-                if let Some(cost_multiplier) = &mut data.cost_multipliers.get_mut(ent) {
-                    cost_multiplier.multiplier = cost
-                }
+                let cost = match data.quicknesses.get(ent) {
+                    Some(quickness) => Self::get_cost(quickness.quickness, cost_modifier),
+                    None => Self::get_cost(BASE_TURN_TIME, cost_modifier),
+                };
+
                 let (x, y) = (move_event.start_x, move_event.start_y);
                 let (dx, dy) = (move_event.dest_x, move_event.dest_y);
                 // remove collider from previous position
@@ -167,6 +189,9 @@ impl<'a> System<'a> for Movement {
 
                 data.entity_map.actors.insert(dx, dy, ent);
                 view.set(dx, dy, true, false);
+
+                data.action_results.insert(ent, ActionResult::from(cost));
+                // println!("added actionresult", )
             }
         }
     }
