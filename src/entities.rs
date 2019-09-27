@@ -10,9 +10,9 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Name::new("Player"))
         .with(Seeing::new(30))
         .with(Position::new(x,y))
+        .with(Quickness::new())
         .with(Renderable::new('@', colors::WHITE, None))
         .with(Camera{})
-        .with(CostMultiplier { multiplier: 1.0 })
         .with(Corporeal::new(10))
         .with(Actor::from_stats(18, 18, 18))
         .with(PlayerControl{})
@@ -21,13 +21,13 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
 
 pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     let mut rng = rand::thread_rng();
-    let stats: (i32, i32, i32) = (10,rng.gen_range(2, 14),10);
+    let stats: (u32, u32, u32) = (10,rng.gen_range(2, 13),10);
+    
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
-
     let color = colors::Color::new(rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
-    
+
     let chars = "obcdfsrxvlgZhq";
     let random_char = chars
         .chars()
@@ -37,10 +37,10 @@ pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
     world.create_entity()
         .with(Name::new("Dummy"))
         .with(Seeing::new(20))
+        .with(Quickness::new())
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None))
         .with(Corporeal::new(10))
-        .with(CostMultiplier { multiplier: 1.0 })
         .with(Actor::from_stats(stats.0, stats.1, stats.2))
         // .with(Target { entity })
         .with(AiControl { ai_type: AiType::Monster })
@@ -74,9 +74,6 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 
     world.create_entity()
         .with(Position::new(x,y))
-        // .with(PlayerControl{})
-        // .with(Actor::new())
-        // .with(Stats::new(10,16,10))
         .with(Renderable::new(random_char, color, Some(bg_color)))
         .with(Floor{})
         .build();

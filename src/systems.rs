@@ -1,8 +1,9 @@
 pub mod render;
 pub mod movement;
 pub mod action;
-pub mod initiative;
+pub mod time;
 pub mod input;
 pub mod ai;
 pub mod mapgen;
 pub mod attack;
+pub mod stats;

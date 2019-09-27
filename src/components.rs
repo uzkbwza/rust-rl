@@ -2,6 +2,8 @@ use specs::prelude::*;
 use tcod::colors;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
+use crate::BASE_TURN_TIME;
+use crate::MIN_TURN_TIME;
 pub mod flags;
 
 #[derive(Component, Default, Debug)]
@@ -44,33 +46,56 @@ impl Name {
 
 #[derive(Component, PartialEq, Debug)]
 #[storage(DenseVecStorage)]
+pub struct Quickness {
+    pub quickness: u32
+}
+
+impl Quickness {
+    pub fn new() -> Self {
+        Quickness {
+            quickness: BASE_TURN_TIME
+        }
+    }
+
+    pub fn modify_quickness(&mut self, modifier: i32) {
+        if modifier < BASE_TURN_TIME as i32 {
+            self.quickness = (BASE_TURN_TIME as i32 - modifier) as u32;
+        } else {
+            self.quickness = MIN_TURN_TIME
+        }
+    }
+}
+
+#[derive(Component, Copy, Clone, PartialEq, Debug)]
+#[storage(DenseVecStorage)]
 pub struct Actor {
-    pub fatigue: f32,
+    pub next_turn: u64,
     pub stats: Stats
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub struct Stats {
-    pub strength: i32,
-    pub agility: i32, 
-    pub intelligence: i32,
+    pub strength: u32,
+    pub agility: u32, 
+    pub intelligence: u32,
 }
 
 impl Actor {
     pub fn new() -> Self {
-        Actor { 
-            fatigue: 0.0,
-            stats: Stats {
+        let stats = Stats {
                 strength: 10,
                 agility: 10,
-                intelligence: 10
-            }
+                intelligence: 10 };
+
+        Actor { 
+            next_turn: 0,
+            stats
         }
     }
 
-    pub fn from_stats(strength: i32, agility: i32, intelligence: i32) -> Self {
+    pub fn from_stats(strength: u32, agility: u32, intelligence: u32) -> Self {
         Actor {
-            fatigue: 0.0,
+            next_turn: 0,
             stats: Stats {
                 strength,
                 agility,
@@ -78,17 +103,9 @@ impl Actor {
             }
         }
     }
-}
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct CostMultiplier {
-    pub multiplier: f32,
-}
-
-impl CostMultiplier {
-    pub fn reset(&mut self) {
-        self.multiplier = 1.0;
+    pub fn set_next_turn_from_cost(&mut self, world_time: u64, cost: u32) {
+        self.next_turn = u64::max(world_time + 1, world_time + cost as u64)
     }
 }
 

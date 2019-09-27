@@ -1,8 +1,6 @@
 use specs::prelude::*;
-use tcod::colors;
-use crate::systems::ai::types::AiType;
 use crate::systems::movement::Dir;
-use std::collections::HashMap;
+
 
 #[derive(Component, Default, Debug)]
 #[storage(VecStorage)]
