@@ -28,7 +28,9 @@ impl<'a> System<'a> for QuicknessSystem {
     type SystemData = StatsUpdaterSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
         for (actor, quickness) in (&data.actors, &mut data.quicknesses).join() {
-            quickness.modify_quickness(Self::quickness_from_agility(actor.stats.agility));
+            let modifier = Self::quickness_from_agility(actor.stats.agility);
+            // println!("{}", modifier);
+            quickness.modify_quickness(modifier);
         }
     }
 }

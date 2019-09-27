@@ -59,7 +59,7 @@ impl Quickness {
 
     pub fn modify_quickness(&mut self, modifier: i32) {
         if modifier < BASE_TURN_TIME as i32 {
-            self.quickness = (BASE_TURN_TIME - modifier as u32);
+            self.quickness = (BASE_TURN_TIME as i32 - modifier) as u32;
         } else {
             self.quickness = MIN_TURN_TIME
         }
