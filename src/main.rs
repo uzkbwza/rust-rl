@@ -2,10 +2,10 @@ extern crate specs;
 
 #[macro_use]
 extern crate specs_derive;
-extern crate shred;
-
-extern crate shred_derive;
 extern crate shrev;
+
+extern crate shred;
+extern crate shred_derive;
 
 use specs::prelude::*;
 
@@ -27,7 +27,8 @@ pub const SCREEN_HEIGHT: i32 = 50;
 pub const MAP_WIDTH: i32 = 100;
 pub const MAP_HEIGHT: i32 = 100;
 
-pub const BASE_TURN_TIME: i32 = 100;
+pub const BASE_TURN_TIME: u32 = 1000;
+pub const MIN_TURN_TIME: u32 = 1;
 
 use std::env;
 
@@ -49,14 +50,14 @@ pub struct GameState {
 }
 
 pub struct WorldTime {
-    pub tick: i64,
-    pub world_turns: i32,
-    pub player_turns: i32,
+    pub tick: u64,
+    pub world_turns: u32,
+    pub player_turns: u32,
 }
 
 #[derive(Eq, Debug)]
 pub struct Turn {
-    pub tick: i64,
+    pub tick: u64,
     pub entity: Entity,
 }
 
@@ -89,7 +90,7 @@ impl WorldTime {
     }
 
     pub fn determine_world_turn(&mut self) {
-        self.world_turns = (self.tick / BASE_TURN_TIME as i64) as i32
+        self.world_turns = (self.tick / BASE_TURN_TIME as u64) as u32
     }
     
     pub fn increment_player_turn(&mut self) {
@@ -138,14 +139,14 @@ fn main() {
         // .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
         .with_thread_local(systems::render::Render::new())
         // .with(systems::time::Time, "time_sys", &[])
+        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
+        .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
         .with(systems::time::PlayerStartTurn, "player_start_turn_sys", &["turn_allocator_sys"])
-        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with_barrier()
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
         .with_barrier()
         .with(systems::input::Input::new(), "input_sys", &[])
-        .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["input_sys", "ai_sys"])
         .with(systems::movement::Movement, "movement_sys", &["action_sys"])
         .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
@@ -200,7 +201,7 @@ fn main() {
 
     entities::create_shack(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
-    for _ in 0..100 {
+    for _ in 0..500 {
         dummies_list.push(entities::create_dummy(&mut world, player));
     }
 

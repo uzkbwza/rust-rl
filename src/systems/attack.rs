@@ -24,6 +24,13 @@ pub struct AttackSystemData<'a> {
     pub floors: ReadStorage<'a, Floor>,
     pub message_log: WriteExpect<'a, MessageLog>,
     pub names: ReadStorage<'a, Name>,
+    pub quicknesses: ReadStorage<'a, Quickness>,
+}
+
+impl Attack {
+    fn get_cost(base: u32, modifier: f32) -> u32 {
+        (modifier * base as f32) as u32
+    }
 }
 
 impl<'a> System<'a> for Attack {
@@ -40,7 +47,13 @@ impl<'a> System<'a> for Attack {
                     data.message_log.log(format!("{} attacks {}", name.name, target_name.name));
                 }
             }
-            data.action_results.insert(ent, ActionResult::from(BASE_TURN_TIME));
+
+            let cost = match data.quicknesses.get(ent) {
+                Some(quickness) => Self::get_cost(quickness.quickness, 1.0),
+                None => Self::get_cost(BASE_TURN_TIME, 1.0),
+            };
+
+            data.action_results.insert(ent, ActionResult::from(cost));
         }
     }
 }

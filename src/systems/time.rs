@@ -8,7 +8,6 @@ use crate::Turn;
 
 // turn structure
 // --> TurnAllocator       | finds actors who have 0 fatigue and no MyTurn component, and gives them a MyTurn.
-// --> Fatigue             | decrements every actor's fatigue clamped to 0.
 // --> StartTurn           | 
 // --> PlayerStartTurn     | checks if player has MyTurn and pauses game.
 // --> Action              | gets actor actions and removes MyTurn
@@ -51,22 +50,27 @@ impl<'a> System<'a> for TurnAllocator {
     type SystemData = TurnAllocatorSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.game_state.player_turn {
-            for (actor, entity, _my_turn) in (&data.actors, &data.entities, !&data.my_turns).join() {
+            for (actor, entity, name, _my_turn) in (&data.actors, &data.entities, &data.names, !&data.my_turns).join() {
                 let actor_next_turn = Turn {
                     tick: actor.next_turn,
                     entity: entity
                 };
+                // println!("{}, {}", name.name, actor_next_turn.tick);
                 data.turn_queue.push(actor_next_turn);
             }
 
             let next_turn = data.turn_queue.peek().unwrap().tick;
+            // println!("{:?}", data.turn_queue.peek());
+
+            // loop through all "next turns" that store the same tick, making sure all actors who are ready
+            // on the same turn get to act on the same gameloop iteration (unordered) 
             while !data.turn_queue.is_empty() && data.turn_queue.peek().unwrap().tick == next_turn {
                 let turn = data.turn_queue.pop().unwrap();
                 assert_eq!(next_turn, turn.tick);
                 data.game_state.world_time.tick = turn.tick;
                 data.game_state.world_time.determine_world_turn();
                 data.my_turns.insert(turn.entity, MyTurn{});
-                println!("{:?}", data.turn_queue.len());
+                // println!("turn queue length: {:?}", data.turn_queue.len());
             }
         }
     }
@@ -103,6 +107,7 @@ pub struct EndTurnSystemData<'a> {
     world_updater: Read<'a, LazyUpdate>,
     game_state: WriteExpect<'a, crate::GameState>,
     turn_queue: WriteExpect<'a, crate::TurnQueue>,
+    players: ReadStorage<'a, PlayerControl>,
 }
 
 pub struct EndTurn;
@@ -113,7 +118,10 @@ impl<'a> System<'a> for EndTurn {
             for (ent, actor) in (&data.entities, &mut data.actors).join() {
                 if let Some(result) = data.action_results.get_mut(ent) {
                     actor.set_next_turn_from_cost(data.game_state.world_time.tick, result.cost);
-                    // println!("actor next turn set to {:?} from cost {:?}", actor.next_turn, result.cost);
+                    if let Some(player) = data.players.get(ent) {
+                        // println!("{}", data.game_state.world_time.tick);
+                        // println!("{:?} next turn set to {:?} from cost {:?}", ent, actor.next_turn, result.cost);
+                    }
                     data.action_results.remove(ent);
                 }
             }

@@ -12,8 +12,15 @@ pub struct StatsUpdaterSystemData<'a> {
 
 pub struct QuicknessSystem;
 impl QuicknessSystem {
-    fn quickness_from_agility(agility: i32) -> i32 {
-        ((agility - (BASE_TURN_TIME / 100))) * (BASE_TURN_TIME / 20)
+    fn quickness_from_agility(agility: u32) -> i32 {
+        let agility = agility as i32;
+        let base = BASE_TURN_TIME as i32;
+
+        if agility > 9 {
+            (agility - 10) * (base as i32 / 100)
+        } else {
+            - ((10 - agility) * (base as i32 / 100))
+        }
     }
 }
 

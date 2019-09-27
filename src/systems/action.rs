@@ -37,7 +37,7 @@ impl<'a> System<'a> for ActionHandler {
         let command_events = data.command_event_channel.read(self.command_event_reader.as_mut().unwrap());
         for command_event in command_events {
             let entity = command_event.entity;
-            // println!("{:?}", &command_event.command);
+            // println!("{:?}: {:?}", command_event.entity, &command_event.command);
             match command_event.command {
                 Command::Move(dir) => {
                     let (dx, dy) = Dir::dir_to_pos(dir);

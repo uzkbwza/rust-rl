@@ -54,7 +54,7 @@ impl <'a> System<'a> for Ai {
             return;
         }
 
-        for (ent, ai_unit, _my_turn, _position) in (&data.entities, &data.ai_units, &data.my_turns, &data.positions).join() {
+        for (ent, ai_unit, _my_turn) in (&data.entities, &data.ai_units, &data.my_turns).join() {
             let ai_type = ai_unit.ai_type;
             let command = Self::get_command(ent, ai_type, &data);
             let command_event = CommandEvent::new(command, ent);

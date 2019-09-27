@@ -87,7 +87,7 @@ impl Screen for Viewport {
         let mut fov_map = &mut data.view.map.lock().unwrap();
         
         for (ent, player, seer, pos, actor) in (&data.entities, &data.players, &mut data.seers, &data.positions, &data.actors).join() {
-            if data.game_state.player_turn {
+            if data.game_state.player_turn || data.game_state.debug {
                 data.root.clear();
                 let map = &data.entity_map;
                 let radius = seer.fov;
@@ -176,24 +176,24 @@ impl Screen for Viewport {
                 }
             }
         }
-        if data.game_state.debug && data.game_state.player_turn {
-            // for (ai, pos, seer) in (&data.ais, &data.positions, &mut data.seers).join() {
-            //     fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
-            //     for x in 0..i32::min(viewport_width, MAP_WIDTH) {
-            //         for y in 0..i32::min(viewport_height, MAP_HEIGHT) {
-            //             let world_coords = self.get_world_coordinates((x, y), camera_position);
-            //             if fov_map.is_in_fov(world_coords.0, world_coords.1) {
-            //                 let mut bg = data.root.get_char_background(x + self.x, y + self.y);
-            //                 if bg.r <= 250 {
-            //                     bg.r += 5
-            //                 } else {
-            //                     bg.r = 255
-            //                 }
-            //                 data.root.set_char_background(x + self.x, y + self.y, bg, BackgroundFlag::Set);
-            //             }
-            //         }
-            //     }
-            // }
+        if data.game_state.debug {
+            for (ai, pos, seer) in (&data.ais, &data.positions, &mut data.seers).join() {
+                fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
+                for x in 0..i32::min(viewport_width, MAP_WIDTH) {
+                    for y in 0..i32::min(viewport_height, MAP_HEIGHT) {
+                        let world_coords = self.get_world_coordinates((x, y), camera_position);
+                        if fov_map.is_in_fov(world_coords.0, world_coords.1) {
+                            let mut bg = data.root.get_char_background(x + self.x, y + self.y);
+                            if bg.r <= 250 {
+                                bg.r += 5
+                            } else {
+                                bg.r = 255
+                            }
+                            data.root.set_char_background(x + self.x, y + self.y, bg, BackgroundFlag::Set);
+                        }
+                    }
+                }
+            }
             data.root.print(0, 2, format!("World tick: {}", data.game_state.world_time.tick));
             data.root.print(0, 3, format!("World turns: {}", data.game_state.world_time.world_turns));
             data.root.print(0, 4, format!("Player turns: {}", data.game_state.world_time.player_turns));

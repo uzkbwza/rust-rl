@@ -129,8 +129,8 @@ impl Movement {
         )
     }
 
-    fn get_cost(base: i32, modifier: f32) -> i32 {
-        (modifier * base as f32) as i32
+    fn get_cost(base: u32, modifier: f32) -> u32 {
+        (modifier * base as f32) as u32
     }
 }
 

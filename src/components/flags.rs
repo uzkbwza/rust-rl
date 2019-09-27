@@ -4,11 +4,11 @@ use crate::BASE_TURN_TIME;
 
 #[derive(Component, Debug)]
 pub struct ActionResult {
-    pub cost: i32
+    pub cost: u32
 }
 
 impl ActionResult {
-    pub fn from(cost: i32) -> Self {
+    pub fn from(cost: u32) -> Self {
         ActionResult {
             cost
         }
