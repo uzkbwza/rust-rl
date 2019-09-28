@@ -106,11 +106,11 @@ fn main() {
    
     let world_time = time::WorldTime::new();
     let world_resources = WorldResources {
-        end: false, 
-        player_turn: false, 
+        player_turn: false,
         real_time: false, 
         debug: DEBUG,
-        world_time: world_time, };
+        world_time: world_time,
+    };
         
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
@@ -149,15 +149,26 @@ fn main() {
         dummies_list.push(entities::create_dummy(&mut world, player));
     }
 
+    let mut initted = false;
+
     loop {
         dispatcher.dispatch(&mut world);
         {
 
             let world_resources = world.read_resource::<WorldResources>();
-            if world_resources.player_turn {
-                println!("{:?}", world.read_resource::<systems::render::TileMap>()[((VIEWPORT_WIDTH/2) as usize, (VIEWPORT_HEIGHT/2) as usize)])
+            if world_resources.player_turn && !initted {
+                for (i, item) in world.read_resource::<systems::render::TileMap>().elements_column_major_iter().enumerate() {
+                    let mut newline = "";
+                    let row = i % VIEWPORT_WIDTH as usize;
+                    if row == 0 {
+                        newline = "\n";
+                    }
+                    if let Some(tile) = item {
+                        print!("{}{}", tile.glyph, newline)
+                    }
+                }
             }
-            if world_resources.end { break }
+            initted = true;
         }
         world.maintain();
     }

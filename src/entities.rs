@@ -51,7 +51,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let mut rng = rand::thread_rng();
     let brightness: i16 = 20;
     let variation: i16 = 5;
-    let chars = "rn.,` ";
+    let chars = ".......................,";
     let random_char = chars
         .chars()
         .choose(&mut rng)

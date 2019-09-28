@@ -142,7 +142,7 @@ pub struct InputSystemData<'a> {
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:          Read<'a, LazyUpdate>,
     pub root:       ReadExpect<'a, Root>,
-    pub game_state: WriteExpect<'a, crate::GameState>,
+    pub world_resources: WriteExpect<'a, crate::WorldResources>,
     pub key_event_channel:      Write<'a, EventChannel<KeyEvent>>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
 }
@@ -164,8 +164,7 @@ impl<'a> System<'a> for Input {
         
         // meta commands
         match command {
-                Some(Command::EndGame) => data.game_state.end = true,
-                Some(Command::ToggleRealTime) => data.game_state.real_time = !data.game_state.real_time,
+                Some(Command::ToggleRealTime) => data.world_resources.real_time = !data.world_resources.real_time,
                 _ => (),
         }
 
@@ -203,7 +202,7 @@ impl<'a> System<'a> for Input {
                             } else { continue }
                         } 
                         data.command_event_channel.single_write(command_event);
-                        data.game_state.world_time.increment_player_turn();
+                        data.world_resources.world_time.increment_player_turn();
                     }
                 },
                 _ => (),
