@@ -9,6 +9,7 @@ use crate::map::{EntityMap, View};
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
 use tcod::map::FovAlgorithm;
 use array2d::Array2D;
+use std::process::exit;
 
 pub type TileMap = Array2D<Option<Tile>>;
 
@@ -38,7 +39,7 @@ pub struct Tile {
 }
 
 impl Viewport {
-    pub fn set_tile(&self, pos: Position, camera_pos: Position, tile: Tile, tile_map: &mut TileMap) {
+    pub fn set_tile(&self, pos: Position, camera_pos: Position, mut tile: Tile, tile_map: &mut TileMap) {
         let rend_pos = self.get_screen_coordinates(pos, camera_pos);
         let (x, y) = (rend_pos.x, rend_pos.y);
         if x < 0 || x >= self.width { return };
@@ -46,6 +47,11 @@ impl Viewport {
         if let Some(Some(existing_tile)) = tile_map.get(x as usize, y as usize) {
             if tile.elevation < existing_tile.elevation {
                 return
+            }
+            if let Some(bg_color) = existing_tile.bg_color {
+                if tile.bg_color == None {
+                    tile.bg_color = existing_tile.bg_color
+                }
             }
         }
         tile_map[(x as usize, y as usize)] = Some(tile);
@@ -63,12 +69,13 @@ impl Viewport {
             if let Some(_) = data.on_floors.get(ent) {
                 elevation = Elevation::OnFloor
             }
-            let tile = Tile {
+            let mut tile = Tile {
                 elevation,
                 glyph,
                 fg_color,
                 bg_color,
             };
+
             self.set_tile(*pos, camera_pos, tile, &mut data.tile_map);
         }
     }
