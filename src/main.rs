@@ -7,22 +7,24 @@ extern crate shrev;
 extern crate shred;
 extern crate shred_derive;
 
+extern crate rltk;
+use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB, Tile};
+rltk::add_wasm_support!();
+
 use specs::prelude::*;
-
 use rand::prelude::*;
-use std::collections::BinaryHeap;
-
-
-use tcod::console::*;
 use tcod::map::Map as TcodMap;
+use tcod::console::*;
 
 use std::sync::{Arc, Mutex};
-use std::cmp::Ordering;
 
 use components::Actor;
 
 pub const SCREEN_WIDTH: i32 = 80;
 pub const SCREEN_HEIGHT: i32 = 50;
+
+pub const VIEWPORT_WIDTH: i32 = SCREEN_WIDTH - 31;
+pub const VIEWPORT_HEIGHT: i32 = SCREEN_WIDTH - 2;
 
 pub const MAP_WIDTH: i32 = 100;
 pub const MAP_HEIGHT: i32 = 100;
@@ -37,66 +39,13 @@ mod components;
 mod systems;
 mod map;
 mod command;
+mod time;
 
-type TurnQueue = BinaryHeap<Turn>;
-
-// use prelude::*;
-pub struct GameState {
-    pub end: bool,
+pub struct WorldResources {
     pub player_turn: bool,
     pub real_time: bool,
     pub debug: bool,
-    pub world_time: WorldTime,
-}
-
-pub struct WorldTime {
-    pub tick: u64,
-    pub world_turns: u32,
-    pub player_turns: u32,
-}
-
-#[derive(Eq, Debug)]
-pub struct Turn {
-    pub tick: u64,
-    pub entity: Entity,
-}
-
-impl Ord for Turn {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.tick.cmp(&self.tick)
-    }
-}
-
-impl PartialOrd for Turn {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Turn {
-    fn eq(&self, other: &Self) -> bool {
-        self.tick == other.tick
-    }
-}
-
-
-impl WorldTime {
-    pub fn new() -> Self {
-        WorldTime {
-            tick: 0,
-            world_turns: 0,
-            player_turns: 0,
-        }
-    }
-
-    pub fn determine_world_turn(&mut self) {
-        self.world_turns = (self.tick / BASE_TURN_TIME as u64) as u32
-    }
-    
-    pub fn increment_player_turn(&mut self) {
-        self.player_turns += 1;
-    }
-    
+    pub world_time: time::WorldTime,
 }
 
 pub struct MessageLog {
@@ -136,9 +85,8 @@ fn main() {
 
     let mut world = World::new();
     let builder = DispatcherBuilder::new()
-        // .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
+//         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
         .with_thread_local(systems::render::Render::new())
-        // .with(systems::time::Time, "time_sys", &[])
         .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
@@ -146,8 +94,8 @@ fn main() {
         .with_barrier()
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
         .with_barrier()
-        .with(systems::input::Input::new(), "input_sys", &[])
-        .with(systems::action::ActionHandler::new(), "action_sys", &["input_sys", "ai_sys"])
+//        .with(systems::input::Input::new(), "input_sys", &[])
+        .with(systems::action::ActionHandler::new(), "action_sys", &["ai_sys"])
         .with(systems::movement::Movement, "movement_sys", &["action_sys"])
         .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
         .with_barrier()
@@ -156,28 +104,24 @@ fn main() {
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
    
-    let world_time = WorldTime::new();
-    let game_state = GameState { 
+    let world_time = time::WorldTime::new();
+    let world_resources = WorldResources {
         end: false, 
         player_turn: false, 
         real_time: false, 
         debug: DEBUG,
         world_time: world_time, };
-
-    let root = Root::initializer()
-        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("terminal2.png", FontLayout::AsciiInCol)
-        .init();
         
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
     let message_log = MessageLog::new(30);
-    world.insert(game_state);
-    world.insert(root);
+
+    world.insert(world_resources);
     world.insert(map);
     world.insert(view);
     world.insert(message_log);
-    world.insert(TurnQueue::new());
+    world.insert(time::TurnQueue::new());
+    world.insert(systems::render::TileMap::filled_with(None, VIEWPORT_WIDTH as usize, VIEWPORT_HEIGHT as usize));
 
     let player = entities::create_player(&mut world, MAP_WIDTH/2, MAP_HEIGHT/2);
     
@@ -208,9 +152,12 @@ fn main() {
     loop {
         dispatcher.dispatch(&mut world);
         {
-            let game_state = world.read_resource::<GameState>();
-            let root = world.read_resource::<Root>();
-            if game_state.end || root.window_closed() { break }
+
+            let world_resources = world.read_resource::<WorldResources>();
+            if world_resources.player_turn {
+                println!("{:?}", world.read_resource::<systems::render::TileMap>()[((VIEWPORT_WIDTH/2) as usize, (VIEWPORT_HEIGHT/2) as usize)])
+            }
+            if world_resources.end { break }
         }
         world.maintain();
     }
