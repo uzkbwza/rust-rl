@@ -1,5 +1,5 @@
 [package]
-name = "specsrl"
+name = "rust-rl"
 version = "0.1.0"
 authors = ["Ian Sly <iansly@protonmail.com>"]
 edition = "2018"
