@@ -3,7 +3,9 @@ use crate::components::*;
 use crate::systems::ai::types::AiType;
 use rand::prelude::*;
 use tcod::colors;
-use tcod::chars;
+use crate::MAP_WIDTH;
+use crate::MAP_HEIGHT;
+
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
@@ -97,5 +99,30 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
         if i != size {
             create_wall(world, center_x + size - i, center_y - size)
         }
+    }
+}
+
+pub fn create_test_map(world: &mut World) {
+    let player = create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
+
+    for x in 0..MAP_WIDTH {
+        for y in 0..MAP_HEIGHT {
+            create_floor(world, x, y);
+        }
+    }
+
+    for y in 0..MAP_HEIGHT {
+        create_wall(world, MAP_WIDTH - 1, y);
+        create_wall(world, 0, y);
+    }
+    for x in 0..MAP_WIDTH {
+        create_wall(world, x, 0);
+        create_wall(world, x, MAP_HEIGHT - 1);
+    }
+
+    create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
+
+    for _ in 0..50 {
+        create_dummy(world, player);
     }
 }

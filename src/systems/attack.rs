@@ -5,7 +5,7 @@ use crate::components::*;
 use crate::components::flags::requests::*;
 use crate::map::View;
 use crate::systems::movement::Dir;
-use crate::MessageLog;
+use crate::ecs::MessageLog;
 use crate::components::flags::ActionResult;
 use crate::BASE_TURN_TIME;
 

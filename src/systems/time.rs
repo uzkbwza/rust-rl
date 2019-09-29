@@ -3,6 +3,8 @@ use crate::BASE_TURN_TIME;
 use crate::components::*;
 use crate::components::flags::ActionResult;
 use crate::time::Turn;
+use crate::map::View;
+use tcod::map::FovAlgorithm;
 
 #[derive(SystemData)]
 pub struct TurnAllocatorSystemData<'a> {

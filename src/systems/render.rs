@@ -4,7 +4,7 @@ use tcod::console::*;
 use tcod::colors;
 use tcod::input;
 use crate::components::*;
-use crate::MessageLog;
+use crate::ecs::MessageLog;
 use crate::map::{EntityMap, View};
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
 use tcod::map::FovAlgorithm;
@@ -12,15 +12,6 @@ use array2d::Array2D;
 use std::process::exit;
 
 pub type TileMap = Array2D<Option<Tile>>;
-
-trait Screen {
-    fn render(&self, data: &mut RenderData);
-}
-
-struct Viewport {
-    width: i32,
-    height: i32,
-}
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Elevation {
@@ -32,13 +23,36 @@ pub enum Elevation {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Tile {
+    pub position: Position,
     pub elevation: Elevation,
     pub glyph: char,
     pub fg_color: colors::Color,
     pub bg_color: Option<colors::Color>,
 }
 
+impl Tile {
+    pub fn new() -> Self {
+        Tile {
+            position: Position::new(-1, -1),
+            elevation: Elevation::Floor,
+            glyph: ' ',
+            fg_color: colors::WHITE,
+            bg_color: None,
+        }
+    }
+}
+
+struct Viewport {
+    width: i32,
+    height: i32,
+}
+
 impl Viewport {
+
+    fn update(&self, data: &mut RenderData) {
+        Self::set_map(&self, data)
+    }
+
     pub fn set_tile(&self, pos: Position, camera_pos: Position, mut tile: Tile, tile_map: &mut TileMap) {
         let rend_pos = self.get_screen_coordinates(pos, camera_pos);
         let (x, y) = (rend_pos.x, rend_pos.y);
@@ -54,11 +68,12 @@ impl Viewport {
                 }
             }
         }
+
         tile_map[(x as usize, y as usize)] = Some(tile);
     }
 
     // creates full character map of what the player sees.
-    pub fn set_map(&self, mut data: &mut RenderData) {
+    fn set_map(&self, mut data: &mut RenderData) {
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
@@ -69,30 +84,36 @@ impl Viewport {
             if let Some(_) = data.on_floors.get(ent) {
                 elevation = Elevation::OnFloor
             }
+
             let mut tile = Tile {
+                position: self.get_screen_coordinates(*pos, camera_pos),
                 elevation,
                 glyph,
                 fg_color,
                 bg_color,
             };
 
+            let mut fov_map = data.view.map.lock().unwrap();
+            if !fov_map.is_in_fov(pos.x, pos.y) {
+//                tile = Tile::new();
+            }
             self.set_tile(*pos, camera_pos, tile, &mut data.tile_map);
         }
     }
 
-    pub fn get_screen_coordinates(&self, pos: Position, camera_pos: Position) -> Position {
+    fn get_screen_coordinates(&self, pos: Position, camera_pos: Position) -> Position {
         let screen_center = Position::new(self.width / 2, self.height / 2);
         Position::new(screen_center.x + pos.x - camera_pos.x, screen_center.y + pos.y - camera_pos.y)
     }
 
-    pub fn is_on_screen(&self, coords: Position) -> bool {
+    fn is_on_screen(&self, coords: Position) -> bool {
         if coords.x >= 0 && coords.x <= self.width && coords.y >= 0 && coords.y <= self.height {
             return true
         }
         false
     }
 
-    pub fn get_world_coordinates(&self, rend_pos: Position, camera_pos: Position) -> Position {
+    fn get_world_coordinates(&self, rend_pos: Position, camera_pos: Position) -> Position {
         let screen_center = Position::new(self.width / 2, self.height / 2);
         let mut wx = rend_pos.x - screen_center.x + camera_pos.x;
         let mut wy = rend_pos.x - screen_center.x + camera_pos.y;
@@ -101,7 +122,7 @@ impl Viewport {
         Position::new(wx, wy)
     }
 
-    pub fn get_camera_position(&self,  data: &RenderData) -> Position {
+    fn get_camera_position(&self,  data: &RenderData) -> Position {
         let mut camera_position = Position::new(0, 0);
         let viewport_width = self.width;
         let viewport_height = self.height;
@@ -134,12 +155,6 @@ impl Viewport {
     }
 }
 
-impl Screen for Viewport {
-    fn render(&self, data: &mut RenderData) {
-        Self::set_map(&self, data)
-    }
-}
-
 #[derive(SystemData)]
 pub struct RenderData<'a> {
         entities: Entities<'a>,
@@ -163,33 +178,25 @@ pub struct RenderData<'a> {
         // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
 
-pub struct Render {
-    screens: Vec<Box<dyn Screen>>
-}
-
-impl Render {
-
-    pub fn new() -> Self {
-        let mut screens: Vec<Box<dyn Screen>> = Vec::new();
-        let viewport = Viewport {
-            width: SCREEN_WIDTH - 31,
-            height: SCREEN_HEIGHT - 2
-            };
-
-        screens.push(Box::new(viewport));
-        Render { screens }
-
-    }
-}
-
+pub struct Render;
 impl<'a> System<'a> for Render {
     type SystemData = RenderData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        // tcod::system::set_fps(4);
-        for screen in &self.screens {
-            screen.render(&mut data)
+        let viewport = Viewport {
+            width: SCREEN_WIDTH - 31,
+            height: SCREEN_HEIGHT - 2
+        };
+
+        {
+            let mut fov_map = data.view.map.lock().unwrap();
+            for (ent, pos, _player) in (&data.entities, &data.positions, &data.players).join() {
+                fov_map.compute_fov(pos.x, pos.y, 100, true, FovAlgorithm::Basic);
+            }
         }
+
+        // tcod::system::set_fps(4);
+        viewport.update(&mut data);
         // tcod::system::set_fps(60);
         // println!("{:?}", tcod::system::get_fps());
 
@@ -206,5 +213,6 @@ impl<'a> System<'a> for Render {
             let empty_lines = "\n".repeat(box_height as usize - data.message_log.messages.len());
             loglines = format!("{}{}", empty_lines, loglines);
         }
+
     }
 }
