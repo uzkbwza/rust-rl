@@ -2,6 +2,7 @@ use specs::prelude::*;
 use crate::{MAP_WIDTH, MAP_HEIGHT};
 use crate::components::*;
 use tcod::colors;
+use rltk::RGB;
 use array2d::Array2D;
 pub mod algorithms;
 use algorithms::TileType;
@@ -55,25 +56,15 @@ impl<'a> System<'a> for MapGen {
                             let r = (5 + rng.gen_range(0, variation)) as u8;
                             let g = (brightness + rng.gen_range(-variation, variation)) as u8;
                             let b = (5 + rng.gen_range(0, variation)) as u8;
-                            let color = colors::Color {
-                                r,
-                                g,
-                                b,
-                            };
-
-                            let bg_color = colors::Color {
-                                r: r - 5,
-                                g: g - 5,
-                                b: b - 5,
-
-                            };
+                            let color = RGB::from_u8(r, r, r );
+                            let bg_color =  RGB::from_u8(r - 5, g - 5, b - 5,);
 
                         data.renderables.insert(tile_entity, Renderable::new(random_char, color, Some(bg_color)));
                         data.floors.insert(tile_entity, Floor{});
                     },
 
                     TileType::Wall => {
-                        data.renderables.insert(tile_entity, Renderable::new('#', colors::WHITE, Some(colors::DARK_GREY)));
+                        data.renderables.insert(tile_entity, Renderable::new('#', RGB::from_u8(255,255,255), Some(RGB::from_u8(20,20,20))));
                         data.corporeals.insert(tile_entity, Corporeal::new(1000));
                         data.movement_blockers.insert(tile_entity, BlockMovement{});
                         data.sight_blockers.insert(tile_entity, BlockSight{});

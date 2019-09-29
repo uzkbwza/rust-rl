@@ -31,6 +31,10 @@ pub struct Input {
     key_event_queue: Vec<KeyEvent>,
 }
 
+pub trait KeyInterface {
+
+}
+
 impl Input {
     pub fn new() -> Self {
         Input {

@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use tcod::colors;
+use rltk::RGB;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
 use crate::BASE_TURN_TIME;
@@ -153,24 +153,24 @@ impl Position {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component)]
 #[storage(VecStorage)]
 pub struct Renderable {
     pub glyph: char,
-    pub fg_color: colors::Color,
-    pub bg_color: Option<colors::Color>,
+    pub fg_color: RGB,
+    pub bg_color: Option<RGB>,
 }
 
 impl Renderable {
-    pub fn new(glyph: char, fg_color: colors::Color, bg_color: Option<colors::Color>) -> Self {
+    pub fn new(glyph: char, fg_color: RGB, bg_color: Option<RGB>) -> Self {
         Renderable { glyph, fg_color, bg_color }
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component)]
 #[storage(VecStorage)]
 pub struct BoxRenderable {
-    pub map: Vec<Vec<(char, colors::Color)>>,
+    pub map: Vec<Vec<(char, RGB)>>,
 }
 
 #[derive(Component, Default, Debug)]

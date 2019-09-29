@@ -1,8 +1,6 @@
 use specs::prelude::*;
 use shrev::{EventChannel, ReaderId};
-use tcod::console::*;
-use tcod::colors;
-use tcod::input;
+use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB};
 use crate::components::*;
 use crate::ecs::MessageLog;
 use crate::map::{EntityMap, View};
@@ -21,13 +19,13 @@ pub enum Elevation {
     _InAir,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Tile {
     pub position: Position,
     pub elevation: Elevation,
     pub glyph: char,
-    pub fg_color: colors::Color,
-    pub bg_color: Option<colors::Color>,
+    pub fg_color: RGB,
+    pub bg_color: Option<RGB>,
 }
 
 impl Tile {
@@ -36,8 +34,8 @@ impl Tile {
             position: Position::new(-1, -1),
             elevation: Elevation::Floor,
             glyph: ' ',
-            fg_color: colors::WHITE,
-            bg_color: None,
+            fg_color: RGB::from_u8(255, 255, 255),
+            bg_color: Some(RGB::from_u8(0, 0, 0))
         }
     }
 }
@@ -65,6 +63,10 @@ impl Viewport {
             if let Some(bg_color) = existing_tile.bg_color {
                 if tile.bg_color == None {
                     tile.bg_color = existing_tile.bg_color
+                }
+            } else {
+                if tile.bg_color == None {
+                    tile.bg_color = Some(RGB::from_u8(0, 0, 0))
                 }
             }
         }
@@ -95,7 +97,7 @@ impl Viewport {
 
             let mut fov_map = data.view.map.lock().unwrap();
             if !fov_map.is_in_fov(pos.x, pos.y) {
-//                tile = Tile::new();
+                tile = Tile::new();
             }
             self.set_tile(*pos, camera_pos, tile, &mut data.tile_map);
         }
