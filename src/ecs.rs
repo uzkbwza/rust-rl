@@ -8,6 +8,9 @@ use rltk::RandomNumberGenerator;
 use rand::prelude::*;
 use std::sync::{Arc, Mutex};
 use tcod::map::Map as TcodMap;
+use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB};
+use shrev::{EventChannel, Event};
+
 
 // previously GameState
 pub struct WorldResources {
@@ -55,14 +58,14 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
         .with(systems::time::PlayerStartTurn, "player_start_turn_sys", &["turn_allocator_sys"])
-        .with_barrier()
+//        .with_barrier()
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
-        .with_barrier()
-//        .with(systems::input::Input::new(), "input_sys", &[])
+//        .with_barrier()
+        .with(systems::input::Input::new(), "input_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["ai_sys"])
         .with(systems::movement::Movement, "movement_sys", &["action_sys"])
         .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
-        .with_barrier()
+//        .with_barrier()
         .with(systems::time::EndTurn, "end_turn_sys", &[])
         .with_thread_local(systems::render::Render);
 
@@ -81,6 +84,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
     let message_log = MessageLog::new(30);
     let world_rng = thread_rng();
+    let key_channel: EventChannel<VirtualKeyCode> = EventChannel::new();
 
     world.insert(world_resources);
     world.insert(map);
@@ -91,6 +95,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
     world.insert(RandomNumberGenerator::new());
 
     entities::create_test_map(&mut world);
+    dispatcher.dispatch(&mut world);
 
     (world, dispatcher)
 }

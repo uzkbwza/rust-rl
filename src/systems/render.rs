@@ -47,9 +47,7 @@ struct Viewport {
 
 impl Viewport {
 
-    fn update(&self, data: &mut RenderData) {
-        Self::set_map(&self, data)
-    }
+    fn update(&self, data: &mut RenderData) { Self::set_map(&self, data) }
 
     pub fn set_tile(&self, pos: Position, camera_pos: Position, mut tile: Tile, tile_map: &mut TileMap) {
         let rend_pos = self.get_screen_coordinates(pos, camera_pos);
@@ -76,6 +74,8 @@ impl Viewport {
 
     // creates full character map of what the player sees.
     fn set_map(&self, mut data: &mut RenderData) {
+
+        let mut tile_map = TileMap::filled_with(None, MAP_WIDTH as usize, MAP_HEIGHT as usize);
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
@@ -99,8 +99,9 @@ impl Viewport {
             if !fov_map.is_in_fov(pos.x, pos.y) {
                 tile = Tile::new();
             }
-            self.set_tile(*pos, camera_pos, tile, &mut data.tile_map);
+            self.set_tile(*pos, camera_pos, tile, &mut tile_map);
         }
+        *data.tile_map = tile_map;
     }
 
     fn get_screen_coordinates(&self, pos: Position, camera_pos: Position) -> Position {
@@ -198,7 +199,9 @@ impl<'a> System<'a> for Render {
         }
 
         // tcod::system::set_fps(4);
-        viewport.update(&mut data);
+        if data.world_resources.player_turn {
+            viewport.update(&mut data);
+        }
         // tcod::system::set_fps(60);
         // println!("{:?}", tcod::system::get_fps());
 

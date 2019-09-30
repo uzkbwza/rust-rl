@@ -3,32 +3,19 @@ use tcod::input::{KeyCode, KeyPressFlags};
 use tcod::input::Key as TcodKey;
 
 use specs::prelude::*;
-use shrev::{EventChannel};
+use shrev::{EventChannel, Event};
 
 use crate::command::{Command, CommandEvent};
 use crate::map::{EntityMap, View};
 use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
 use std::num;
+use rltk::VirtualKeyCode;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum KeyEvent {
-    Escape, Enter, Backspace, Space,
-    Ctrl, Shift, Alt,
-    Up, Down, Left, Right,
-    Period, Comma, Slash,
-    Semicolon, Apostrophe,
-    LeftBracket, RightBracket,
-    Backslash, Minus, Equals, Backtick,
-    N1, N2, N3, N4, N5, N6, N7, N8, N9, N0,
-    Numpad0, Numpad1, Numpad2, Numpad3, Numpad4, Numpad5, Numpad6, Numpad7, Numpad8, Numpad9,
-    A, B, C, D, E, F, G, H, I, J, K, L, M, 
-    N, O, P, Q, R, S, T, U, V, W, X, Y, Z, _UNIMPLEMENTED
-}
-
-
+#[derive(Debug)]
 pub struct Input {
-    key_event_queue: Vec<KeyEvent>,
+    key_queue: Vec<VirtualKeyCode>,
+    key_reader: Option<ReaderId<VirtualKeyCode>>,
 }
 
 pub trait KeyInterface {
@@ -38,99 +25,26 @@ pub trait KeyInterface {
 impl Input {
     pub fn new() -> Self {
         Input {
-            key_event_queue: Vec::new(),
+            key_queue: Vec::new(),
+            key_reader: None,
         }
     }
 
-    // tcod keys suck. this will make things a little easier
-    fn get_key(key_state: Option<TcodKey>) -> Option<KeyEvent> {
-        if key_state == None { return None }
-        let key = key_state.unwrap();
-        if !key.pressed { return None }
-        match key.code {
-            KeyCode::Escape     => Some(KeyEvent::Escape),
-            KeyCode::Enter      => Some(KeyEvent::Enter),
-            KeyCode::Backspace  => Some(KeyEvent::Backspace),
-            KeyCode::Spacebar   => Some(KeyEvent::Space),
-            KeyCode::Control    => Some(KeyEvent::Ctrl),
-            KeyCode::Shift      => Some(KeyEvent::Shift),
-            KeyCode::Alt        => Some(KeyEvent::Alt),
-            KeyCode::Up         => Some(KeyEvent::Up),
-            KeyCode::Down       => Some(KeyEvent::Down),
-            KeyCode::Left       => Some(KeyEvent::Left),
-            KeyCode::Right      => Some(KeyEvent::Right),
-            KeyCode::Char => {
-                match key.printable {
-                    'a' => Some(KeyEvent::A),
-                    'b' => Some(KeyEvent::B),
-                    'c' => Some(KeyEvent::C),
-                    'd' => Some(KeyEvent::D),
-                    'e' => Some(KeyEvent::E),
-                    'f' => Some(KeyEvent::F),
-                    'g' => Some(KeyEvent::G),
-                    'h' => Some(KeyEvent::H),
-                    'i' => Some(KeyEvent::I),
-                    'j' => Some(KeyEvent::J),
-                    'k' => Some(KeyEvent::K),
-                    'l' => Some(KeyEvent::L),
-                    'm' => Some(KeyEvent::M),
-                    'n' => Some(KeyEvent::N),
-                    'o' => Some(KeyEvent::O),
-                    'p' => Some(KeyEvent::P),
-                    'q' => Some(KeyEvent::Q),
-                    'r' => Some(KeyEvent::R),
-                    's' => Some(KeyEvent::S),
-                    't' => Some(KeyEvent::T),
-                    'u' => Some(KeyEvent::U),
-                    'v' => Some(KeyEvent::V),
-                    'w' => Some(KeyEvent::W),
-                    'x' => Some(KeyEvent::X),
-                    'y' => Some(KeyEvent::Y),
-                    'z' => Some(KeyEvent::Z),
-                    '.' => Some(KeyEvent::Period),
-                    ',' => Some(KeyEvent::Comma),
-                    ';' => Some(KeyEvent::Semicolon),
-                    '\'' => Some(KeyEvent::Apostrophe),
-                    '/' => Some(KeyEvent::Slash),
-                    '[' => Some(KeyEvent::LeftBracket),
-                    ']' => Some(KeyEvent::RightBracket),
-                    '\\' => Some(KeyEvent::Backslash),
-                    '-' => Some(KeyEvent::Minus),
-                    '=' => Some(KeyEvent::Equals),
-                    '`' => Some(KeyEvent::Backtick),
-                    _ => None
-                }
-            },
-            KeyCode::Number1 => Some(KeyEvent::N1),
-            KeyCode::Number2 => Some(KeyEvent::N2),
-            KeyCode::Number3 => Some(KeyEvent::N3),
-            KeyCode::Number4 => Some(KeyEvent::N4),
-            KeyCode::Number5 => Some(KeyEvent::N5),
-            KeyCode::Number6 => Some(KeyEvent::N6),
-            KeyCode::Number7 => Some(KeyEvent::N7),
-            KeyCode::Number8 => Some(KeyEvent::N8),
-            KeyCode::Number9 => Some(KeyEvent::N9),
-            KeyCode::Number0 => Some(KeyEvent::N0),
-            _ => None
-        }
-    }
-
-    fn get_command_from_key(key: KeyEvent) -> Option<Command> {
+    fn get_command_from_key(key: VirtualKeyCode) -> Option<Command> {
         match key {
             // global commands
-            KeyEvent::Escape => Some(Command::EndGame),
+            VirtualKeyCode::Escape => Some(Command::EndGame),
 
             // actor commands
-            KeyEvent::H => Some(Command::Move(Dir::W)),
-            KeyEvent::J => Some(Command::Move(Dir::S)),
-            KeyEvent::K => Some(Command::Move(Dir::N)),
-            KeyEvent::L => Some(Command::Move(Dir::E)),
-            KeyEvent::Y => Some(Command::Move(Dir::NW)),
-            KeyEvent::U => Some(Command::Move(Dir::NE)),
-            KeyEvent::B => Some(Command::Move(Dir::SW)),
-            KeyEvent::N => Some(Command::Move(Dir::SE)),
-            KeyEvent::Period => Some(Command::Move(Dir::Nowhere)),
-            KeyEvent::Slash => Some(Command::ToggleRealTime),
+            VirtualKeyCode::H | VirtualKeyCode::Numpad4 => Some(Command::Move(Dir::W)),
+            VirtualKeyCode::J | VirtualKeyCode::Numpad2 => Some(Command::Move(Dir::S)),
+            VirtualKeyCode::K | VirtualKeyCode::Numpad8 => Some(Command::Move(Dir::N)),
+            VirtualKeyCode::L | VirtualKeyCode::Numpad6 => Some(Command::Move(Dir::E)),
+            VirtualKeyCode::Y | VirtualKeyCode::Numpad7 => Some(Command::Move(Dir::NW)),
+            VirtualKeyCode::U | VirtualKeyCode::Numpad9 => Some(Command::Move(Dir::NE)),
+            VirtualKeyCode::B | VirtualKeyCode::Numpad1 => Some(Command::Move(Dir::SW)),
+            VirtualKeyCode::N | VirtualKeyCode::Numpad3 => Some(Command::Move(Dir::SE)),
+            VirtualKeyCode::Period => Some(Command::Move(Dir::Nowhere)),
             _ => None
         }
     }
@@ -145,9 +59,8 @@ pub struct InputSystemData<'a> {
     pub positions: ReadStorage<'a, Position>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:          Read<'a, LazyUpdate>,
-    pub root:       ReadExpect<'a, Root>,
     pub world_resources: WriteExpect<'a, crate::WorldResources>,
-    pub key_event_channel:      Write<'a, EventChannel<KeyEvent>>,
+    pub key_channel:      Read<'a, EventChannel<VirtualKeyCode>>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
 }
 
@@ -156,28 +69,25 @@ impl<'a> System<'a> for Input {
 
     fn run(&mut self, mut data: Self::SystemData) {
 
-        let key_state = data.root.check_for_keypress(KeyPressFlags::all());
-        let key = Self::get_key(key_state);
-        if key == None { return }
-        let key = key.unwrap();
+        let keys = data.key_channel.read(self.key_reader.as_mut().unwrap());
+        for key in keys {
+            self.key_queue.push(*key);
+        }
+        if self.key_queue.is_empty() { return }
 
-        data.key_event_channel.single_write(key);
-        self.key_event_queue.push(key);
-
-        let command = Self::get_command_from_key(self.key_event_queue.remove(0));
-        
+        let command = Self::get_command_from_key(self.key_queue.pop().unwrap());
         // meta commands
         match command {
-                Some(Command::ToggleRealTime) => data.world_resources.real_time = !data.world_resources.real_time,
-                _ => (),
+            Some(Command::ToggleRealTime) => data.world_resources.real_time = !data.world_resources.real_time,
+            _ => (),
         }
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
-                
+
                 // player commands
                 Some(Command::Move(dir)) => {
-                    // attach action component to player entity 
+                    // attach action component to player entity
                     let mut command_event = CommandEvent::new(command.unwrap(), ent);
 
                     if let Some(pos) = data.positions.get(ent) {
@@ -188,23 +98,23 @@ impl<'a> System<'a> for Input {
                                 x if x >= fov_map.size().0 => fov_map.size().0 - 1,
                                 x if x < 0 => 0,
                                 _ => dpos.0 + pos.x
-                            }, 
+                            },
                             match dpos.1 + pos.y {
                                 y if y >= fov_map.size().1 => fov_map.size().1 - 1,
                                 y if y < 0 => 0,
                                 _ => dpos.1 + pos.y
-                            }, 
+                            },
                         );
 
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
-    
+
                             // attack enemy instead if closeby
                             if let Some(target_entity) = data.entity_map.actors.get(dest.0, dest.1) {
-                               command_event = CommandEvent::new(Command::Attack(dir), ent);
-                            
-                            // make sure bumping into walls doesnt take a turn
+                                command_event = CommandEvent::new(Command::Attack(dir), ent);
+
+                                // make sure bumping into walls doesnt take a turn
                             } else { continue }
-                        } 
+                        }
                         data.command_event_channel.single_write(command_event);
                         data.world_resources.world_time.increment_player_turn();
                     }
@@ -216,9 +126,14 @@ impl<'a> System<'a> for Input {
     
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        let key_event_channel: EventChannel<KeyEvent> = EventChannel::new();
         let command_event_channel: EventChannel<CommandEvent> = EventChannel::new();
-        world.insert(key_event_channel);
         world.insert(command_event_channel);
+        let key_channel: EventChannel<VirtualKeyCode> = EventChannel::new();
+        world.insert(key_channel);
+
+        // incoming input events
+        self.key_reader = Some(world.
+            fetch_mut::<EventChannel<VirtualKeyCode>>()
+            .register_reader());
     }
 }

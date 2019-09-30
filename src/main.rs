@@ -20,10 +20,13 @@ mod command;
 mod time;
 mod systems;
 mod ecs;
+mod render;
+mod input;
 use ecs::*;
 use crate::systems::render::TileMap;
 use crate::systems::movement::CollisionMapUpdater;
 use specs::shred::Fetch;
+use shrev::EventChannel;
 
 pub const SCREEN_WIDTH: i32 = 80;
 pub const SCREEN_HEIGHT: i32 = 50;
@@ -44,47 +47,17 @@ impl GameState for State {
         self.world.maintain();
         self.dispatcher.dispatch(&mut self.world);
         ctx.cls();
-        render(ctx, self.world.read_resource::<TileMap>());
+        render::render_viewport(ctx, self.world.read_resource::<TileMap>());
+        input::send(ctx, self.world.write_resource::<EventChannel<VirtualKeyCode>>());
     }
 }
 
-fn render(ctx: &mut Rltk, tilemap: Fetch<TileMap>) {
-    for entry in tilemap.elements_column_major_iter() {
-        if let Some(t) = entry {
-            if t.position.x < 0 || t.position.y < 0 || t.bg_color == None {
-                continue
-            }
-            ctx.print_color(t.position.x + 1, t.position.y + 1, t.fg_color, t.bg_color.unwrap(), &t.glyph.to_string());
-        }
-    }
-}
-rltk::embedded_resource!(TILE_FONT, "../term.jpg");
 fn main() {
     let mut DEBUG = false;
     let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("debug")) {
-        DEBUG = true;
-    }
-
+    if args.contains(&String::from("debug")) { DEBUG = true; }
     let (mut world, mut dispatcher) = ecs::world_setup(DEBUG);
-
-    rltk::link_resource!(TILE_FONT, "term.jpg");
-
-    let mut window = Rltk::init_raw(
-        SCREEN_WIDTH as u32 * 16,
-        SCREEN_HEIGHT as u32 * 16,
-        "RLTK",
-    );
-    let font = window.register_font(rltk::Font::load("term.jpg", (16, 16)));
-    window.register_console(
-        rltk::SimpleConsole::init(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32, &window.gl),
-        font,
-    );
-
-    let state = State{
-        world,
-        dispatcher
-    };
-
+    let state = State{ world, dispatcher };
+    let window = render::make_window();
     rltk::main_loop(window, state);
 }
