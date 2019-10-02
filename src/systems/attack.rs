@@ -1,14 +1,10 @@
 use specs::prelude::*;
-use shrev::{EventChannel, ReaderId};
-use crate::map::EntityMap;
 use crate::components::*;
 use crate::components::flags::requests::*;
-use crate::map::View;
 use crate::systems::movement::Dir;
 use crate::ecs::MessageLog;
 use crate::components::flags::ActionResult;
 use crate::BASE_TURN_TIME;
-
 
 pub struct Attack;
 
@@ -41,7 +37,7 @@ impl<'a> System<'a> for Attack {
             data.world_updater.remove::<AttackRequest>(ent);
             let attack_pos = Dir::dir_to_pos(attack_request.dir); 
             let attack_pos = Position::new(pos.x + attack_pos.0, pos.y + attack_pos.1);
-            for (target_ent, target_pos, target_name, corporeal, _floor) in (&data.entities, &data.positions, &data.names, &mut data.corporeals, !&data.floors).join() {
+            for (target_pos, target_name, _floor) in (&data.positions, &data.names, !&data.floors).join() {
                 if *target_pos == attack_pos {
                     // println!("attacking", );
                     data.message_log.log(format!("{} attacks {}", name.name, target_name.name));
@@ -53,7 +49,10 @@ impl<'a> System<'a> for Attack {
                 None => Self::get_cost(BASE_TURN_TIME, 1.0),
             };
 
-            data.action_results.insert(ent, ActionResult::from(cost));
+            if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
+                error!("Failed to insert action result from Attack system: {}", err)
+            }
+
         }
     }
 }

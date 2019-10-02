@@ -1,15 +1,12 @@
 use specs::prelude::*;
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
+use crate::{MAP_WIDTH, MAP_HEIGHT};
 use crate::time;
 use crate::map;
 use crate::systems;
 use crate::entities;
 use rltk::RandomNumberGenerator;
-use rand::prelude::*;
 use std::sync::{Arc, Mutex};
 use tcod::map::Map as TcodMap;
-use rltk::{Console, GameState, Rltk, VirtualKeyCode, RGB};
-use shrev::{EventChannel, Event};
 
 
 // previously GameState
@@ -40,7 +37,7 @@ impl MessageLog {
         }
     }
 
-    pub fn pop(&mut self) -> Option<String> {
+    pub fn _pop(&mut self) -> Option<String> {
         match self.messages.len() {
             0 => None,
             _ => Some(self.messages.remove(0))
@@ -67,7 +64,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
         .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
 //        .with_barrier()
         .with(systems::time::EndTurn, "end_turn_sys", &[])
-        .with_thread_local(systems::render::Render);
+        .with_thread_local(systems::render::Render::new());
 
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
@@ -83,15 +80,13 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
     let message_log = MessageLog::new(30);
-    let world_rng = thread_rng();
-    let key_channel: EventChannel<VirtualKeyCode> = EventChannel::new();
 
     world.insert(world_resources);
     world.insert(map);
     world.insert(view);
     world.insert(message_log);
     world.insert(time::TurnQueue::new());
-    world.insert(systems::render::TileMap::filled_with(None, VIEWPORT_WIDTH as usize, VIEWPORT_HEIGHT as usize));
+    world.insert(systems::render::TileMap::filled_with(None));
     world.insert(RandomNumberGenerator::new());
 
     entities::create_test_map(&mut world);

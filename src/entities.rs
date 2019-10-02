@@ -2,7 +2,6 @@ use specs::prelude::*;
 use crate::components::*;
 use crate::systems::ai::types::AiType;
 use rand::prelude::*;
-use rltk::RGB;
 use crate::MAP_WIDTH;
 use crate::MAP_HEIGHT;
 
@@ -13,7 +12,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Seeing::new(30))
         .with(Position::new(x,y))
         .with(Quickness::new())
-        .with(Renderable::new('@', RGB::from_u8(255,255,255), None))
+        .with(Renderable::new('@', (255,255,255), None))
         .with(Camera{})
         .with(Corporeal::new(10))
         .with(Actor::from_stats(18, 18, 18))
@@ -21,14 +20,14 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .build()
 }
 
-pub fn create_dummy(world: &mut World, entity: Entity) -> Entity {
+pub fn _create_dummy(world: &mut World) -> Entity {
     let mut rng = rand::thread_rng();
     let stats: (u32, u32, u32) = (10,rng.gen_range(2, 13),10);
     
     let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
     let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
-    let color = RGB::from_u8(rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
+    let color = (rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
 
     let chars = "obcdfsrxvlgZhq";
     let random_char = chars
@@ -61,8 +60,8 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let r = (5 + rng.gen_range(0, variation)) as u8;
     let g = (brightness + rng.gen_range(-variation, variation)) as u8;
     let b = (5 + rng.gen_range(0, variation)) as u8;
-    let color = RGB::from_u8(r, g, b );
-    let bg_color =  RGB::from_u8(r - 5, g - 5, b - 5,);
+    let color = (r, g, b );
+    let bg_color =  (r - 5, g - 5, b - 5,);
 
     world.create_entity()
         .with(Position::new(x,y))
@@ -74,7 +73,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 pub fn create_wall(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x, y))
-        .with(Renderable::new('#', RGB::from_u8(255,255,255), Some(RGB::from_u8(100,100,100,))))
+        .with(Renderable::new('#', (255,255,255), Some((100,100,100,))))
         .with(BlockSight)
         .with(BlockMovement{})
         .with(Corporeal::new(100))
@@ -93,7 +92,7 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
 }
 
 pub fn create_test_map(world: &mut World) {
-    let player = create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
+    create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
 
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
@@ -112,7 +111,7 @@ pub fn create_test_map(world: &mut World) {
 
     create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
-    for _ in 0..50 {
-        create_dummy(world, player);
-    }
+    // for _ in 0..50 {
+    //     create_dummy(world, player);
+    // }
 }

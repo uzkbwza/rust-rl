@@ -81,7 +81,7 @@ pub struct Stats {
 }
 
 impl Actor {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         let stats = Stats {
                 strength: 10,
                 agility: 10,
@@ -153,16 +153,16 @@ impl Position {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Renderable {
     pub glyph: char,
-    pub fg_color: RGB,
-    pub bg_color: Option<RGB>,
+    pub fg_color: (u8, u8, u8),
+    pub bg_color: Option<(u8, u8, u8)>,
 }
 
 impl Renderable {
-    pub fn new(glyph: char, fg_color: RGB, bg_color: Option<RGB>) -> Self {
+    pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>) -> Self {
         Renderable { glyph, fg_color, bg_color }
     }
 }

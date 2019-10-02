@@ -6,7 +6,7 @@ use crate::map::EntityMap;
 use tcod::pathfinding::Dijkstra;
 use super::AiSystemData;
 
-pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> Option<(i32, (i32, i32))> {
+pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pathfinder: &mut Dijkstra) -> Option<(i32, (i32, i32))> {
     let x = point.0;
     let y = point.1;
     pathfinder.find((x, y));
@@ -22,7 +22,7 @@ pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pat
     Some((ranking, (x, y)))
 }
 
-pub fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_map: &TcodMap, mut pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> (i32, i32) {
+pub fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_map: &TcodMap, pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> (i32, i32) {
     let mut rankings = Vec::new();
     for x in (start.0 - range)..(start.0 + range) + 1  {
         for y in (start.1 - range)..(start.1 + range) + 1 {
@@ -30,7 +30,7 @@ pub fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_m
                 y <= 0 || x >= entity_map.width as i32 || y >= entity_map.height as i32 {
                 continue
             }
-            if let Some(ranking) = rank_distance(dest, (x, y), fov_map, pathfinder, entity_map) {
+            if let Some(ranking) = rank_distance(dest, (x, y), fov_map, pathfinder) {
                 rankings.push(ranking);
             }
         }
@@ -58,7 +58,7 @@ pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
             let dest_point = choose_close_point(20, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
 
             if pathfinder.find((dest_point.0, dest_point.1)) {
-                if let Some(step) = pathfinder.get(0) {
+                if let Some(_) = pathfinder.get(0) {
                     step_pos = pathfinder.walk_one_step().unwrap(); 
                 }
             } else {

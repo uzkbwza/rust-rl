@@ -1,19 +1,14 @@
 use specs::prelude::*;
-use crate::BASE_TURN_TIME;
 use crate::components::*;
 use crate::components::flags::ActionResult;
 use crate::time::Turn;
-use crate::map::View;
-use tcod::map::FovAlgorithm;
 
 #[derive(SystemData)]
 pub struct TurnAllocatorSystemData<'a> {
     entities: Entities<'a>,
-    names: ReadStorage<'a, Name>,
     my_turns: WriteStorage<'a, MyTurn>,
     actors: WriteStorage<'a, Actor>,
     world_resources: WriteExpect<'a, crate::WorldResources>,
-    action_results: WriteStorage<'a, ActionResult>,
     turn_queue: WriteExpect<'a, crate::time::TurnQueue>,
 }
 
@@ -23,7 +18,7 @@ impl<'a> System<'a> for TurnAllocator {
     type SystemData = TurnAllocatorSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.world_resources.player_turn {
-            for (actor, entity, name, _my_turn) in (&data.actors, &data.entities, &data.names, !&data.my_turns).join() {
+            for (actor, entity, _my_turn) in (&data.actors, &data.entities, !&data.my_turns).join() {
                 let actor_next_turn = Turn {
                     tick: actor.next_turn,
                     entity: entity
@@ -42,7 +37,9 @@ impl<'a> System<'a> for TurnAllocator {
                 assert_eq!(next_turn, turn.tick);
                 data.world_resources.world_time.tick = turn.tick;
                 data.world_resources.world_time.determine_world_turn();
-                data.my_turns.insert(turn.entity, MyTurn{});
+                if let Err(err) = data.my_turns.insert(turn.entity, MyTurn{}) {
+                    error!("Failed to insert turn: {}", err)
+                }
                 // println!("turn queue length: {:?}", data.turn_queue.len());
             }
         }
@@ -76,10 +73,9 @@ pub struct EndTurnSystemData<'a> {
     entities: Entities<'a>,
     actors: WriteStorage<'a, Actor>,
     action_results: WriteStorage<'a, ActionResult>,
-    my_turns: WriteStorage<'a, MyTurn>,
-    world_updater: Read<'a, LazyUpdate>,
+    _world_updater: Read<'a, LazyUpdate>,
     world_resources: WriteExpect<'a, crate::WorldResources>,
-    turn_queue: WriteExpect<'a, crate::time::TurnQueue>,
+    _turn_queue: WriteExpect<'a, crate::time::TurnQueue>,
     players: ReadStorage<'a, PlayerControl>,
 }
 
@@ -91,33 +87,13 @@ impl<'a> System<'a> for EndTurn {
             for (ent, actor) in (&data.entities, &mut data.actors).join() {
                 if let Some(result) = data.action_results.get_mut(ent) {
                     actor.set_next_turn_from_cost(data.world_resources.world_time.tick, result.cost);
-                    if let Some(player) = data.players.get(ent) {
+                    if let Some(_) = data.players.get(ent) {
                         // println!("{}", data.world_resources.world_time.tick);
                         // println!("{:?} next turn set to {:?} from cost {:?}", ent, actor.next_turn, result.cost);
                     }
                     data.action_results.remove(ent);
                 }
             }
-        }
-    }
-}
-
-#[derive(SystemData)]
-pub struct PlayerEndTurnSystemData<'a> {
-    entities: Entities<'a>,
-    actors: WriteStorage<'a, Actor>,
-    action_results: WriteStorage<'a, ActionResult>,
-    players: ReadStorage<'a, PlayerControl>,
-    my_turns: WriteStorage<'a, MyTurn>,
-    world_updater: Read<'a, LazyUpdate>,
-    world_resources: WriteExpect<'a, crate::WorldResources>,
-}
-
-pub struct PlayerEndTurn;
-impl<'a> System<'a> for PlayerEndTurn {
-    type SystemData = PlayerEndTurnSystemData<'a>;
-    fn run(&mut self, mut data: Self::SystemData) {
-        for (ent, player) in (&data.entities, &data.players).join() {
         }
     }
 }

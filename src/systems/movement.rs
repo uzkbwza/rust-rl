@@ -1,6 +1,5 @@
 use specs::prelude::*;
-use shrev::{EventChannel, ReaderId};
-use crate::map::EntityMap;
+use crate::map::*;
 use crate::components::*;
 use crate::components::flags::requests::*;
 use crate::map::View;
@@ -164,9 +163,8 @@ impl<'a> System<'a> for Movement {
 
             if let Some(pos) = data.positions.get_mut(ent) {
                 // println!("got here");
-                let dest = (pos.x + move_request.dx, pos.y + move_request.dy);
 
-                let mut move_event = Self::try_move_position(ent, pos, move_request, &view);
+                let move_event = Self::try_move_position(ent, pos, move_request, &view);
 
                 // diagonals cost should be more
                 let cost_modifier: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
@@ -184,13 +182,15 @@ impl<'a> System<'a> for Movement {
                 let (dx, dy) = (move_event.dest_x, move_event.dest_y);
                 // remove collider from previous position
 
-                data.entity_map.actors.remove(x, y);
+                data.entity_map.actors.reset_point(x, y);
                 view.set(x, y, true, true);
 
-                data.entity_map.actors.insert(dx, dy, ent);
+                data.entity_map.actors.set_point(dx, dy, Some(ent));
                 view.set(dx, dy, true, false);
 
-                data.action_results.insert(ent, ActionResult::from(cost));
+                if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
+                    error!("Failed to insert action result from Movement system: {}", err)
+                }
                 // println!("added actionresult", )
             }
         }
@@ -219,7 +219,7 @@ pub struct CollisionMapUpdaterSystemData<'a> {
 impl<'a> System<'a> for CollisionMapUpdater {
     type SystemData = CollisionMapUpdaterSystemData<'a>;
 
-    fn run(&mut self, mut data: Self::SystemData) {
+    fn run(&mut self, data: Self::SystemData) {
         // for event in data.move_command_channel.read
         
         let mut view = data.view.map.lock().unwrap();
@@ -241,7 +241,7 @@ impl<'a> System<'a> for CollisionMapUpdater {
                 walkable = false
             }
             if let Some(_actor) = data.actors.get(ent) {
-                map.actors.insert(pos.x, pos.y, ent);
+                map.actors.set_point(pos.x, pos.y, Some(ent));
                 walkable = false;
             }
             view.set(pos.x, pos.y, transparent, walkable);

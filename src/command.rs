@@ -7,7 +7,7 @@ pub enum Command {
     Attack(Dir),
     _Use(Entity),
     _Rest,
-    ToggleRealTime,
+    _ToggleRealTime,
     EndGame,
 }
 

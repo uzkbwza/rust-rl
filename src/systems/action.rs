@@ -2,7 +2,6 @@ use specs::prelude::*;
 use crate::command::{Command, CommandEvent};
 use crate::systems::movement::{Dir};
 use crate::components::flags::requests::*;
-use crate::components::flags::ActionResult;
 use crate::components::*;
 use shrev::{EventChannel, ReaderId};
 
@@ -42,19 +41,23 @@ impl<'a> System<'a> for ActionHandler {
                 Command::Move(dir) => {
                     let (dx, dy) = Dir::dir_to_pos(dir);
                     let move_request = MoveRequest::new(dx, dy);
-                    data.move_requests.insert(entity, move_request);
+                    if let Err(err) = data.move_requests.insert(entity, move_request) {
+                        error!("Failed to insert move request: {}", err)
+                    }
                     // println!("added move request");
                 },
                 
                 Command::Attack(dir) => {
                     let attack_request = AttackRequest::new(dir);
-                    data.attack_requests.insert(entity, attack_request);
+                    if let Err(err) = data.attack_requests.insert(entity, attack_request) {
+                        error!("Failed to insert attack request: {}", err)
+                    }
                     // println!("added attack request");
                 }
                 _ => (),
             }
             data.my_turns.remove(entity);
-            if let Some(player) = data.players.get(entity) {
+            if let Some(_) = data.players.get(entity) {
                 data.world_resources.player_turn = false;
                 // println!("turned off", );
             }
@@ -67,20 +70,5 @@ impl<'a> System<'a> for ActionHandler {
         self.command_event_reader = Some(world.
             fetch_mut::<EventChannel<CommandEvent>>()
             .register_reader());
-    }
-}
-
-#[derive(SystemData)]
-pub struct ActionResultProcessorSystemData<'a> {
-    actors: ReadStorage<'a, Actor>,
-    action_results: WriteStorage<'a, ActionResult>,
-}
-pub struct ActionResultProcessor;
-impl<'a> System<'a> for ActionResultProcessor {
-    type SystemData = ActionResultProcessorSystemData<'a>;
-    fn run(&mut self, mut data: Self::SystemData) {
-        for (actor, action_result) in (&data.actors, &mut data.action_results).join() {
-
-        }
     }
 }

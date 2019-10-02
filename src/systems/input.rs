@@ -1,15 +1,10 @@
-use tcod::console::*;
-use tcod::input::{KeyCode, KeyPressFlags};
-use tcod::input::Key as TcodKey;
-
 use specs::prelude::*;
-use shrev::{EventChannel, Event};
+use shrev::{EventChannel};
 
 use crate::command::{Command, CommandEvent};
-use crate::map::{EntityMap, View};
+use crate::map::*;
 use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
-use std::num;
 use rltk::VirtualKeyCode;
 
 #[derive(Debug)]
@@ -76,11 +71,6 @@ impl<'a> System<'a> for Input {
         if self.key_queue.is_empty() { return }
 
         let command = Self::get_command_from_key(self.key_queue.pop().unwrap());
-        // meta commands
-        match command {
-            Some(Command::ToggleRealTime) => data.world_resources.real_time = !data.world_resources.real_time,
-            _ => (),
-        }
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
@@ -109,13 +99,14 @@ impl<'a> System<'a> for Input {
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
 
                             // attack enemy instead if closeby
-                            if let Some(target_entity) = data.entity_map.actors.get(dest.0, dest.1) {
+                            if let Some(_) = data.entity_map.actors.retrieve(dest.0, dest.1) {
                                 command_event = CommandEvent::new(Command::Attack(dir), ent);
 
                                 // make sure bumping into walls doesnt take a turn
                             } else { continue }
                         }
                         data.command_event_channel.single_write(command_event);
+                        // println!("{:?}", command_event);
                         data.world_resources.world_time.increment_player_turn();
                     }
                 },

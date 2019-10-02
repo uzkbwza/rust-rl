@@ -2,7 +2,7 @@ use specs::prelude::*;
 use crate::components::*;
 use crate::BASE_TURN_TIME;
 
-pub struct StatCalculator;
+pub struct _StatCalculator;
 
 #[derive(SystemData)]
 pub struct StatsUpdaterSystemData<'a> {

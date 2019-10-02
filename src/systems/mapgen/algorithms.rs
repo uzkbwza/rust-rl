@@ -1,6 +1,5 @@
 use array2d::Array2D;
 use rand::prelude::*;
-use crate::systems::movement::Dir;
 
 #[derive(Copy, Clone, Debug)]
 pub enum TileType {

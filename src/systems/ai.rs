@@ -1,17 +1,12 @@
 use specs::prelude::*;
 use shrev::{EventChannel};
-use tcod::map::FovAlgorithm;
-use tcod::map::Map as TcodMap;
 use crate::command::{Command, CommandEvent};
 use crate::components::{AiControl, MyTurn, Position, Target, Seeing, CanSeeTarget, PlayerControl};
 use crate::systems::movement::{Dir};
 use crate::map::{EntityMap, View};
-use tcod::pathfinding::Dijkstra;
-use array2d::Array2D;
 pub mod types;
 pub mod thinking;
 mod pathfinding;
-use types::*;
 use types::AiType;
 use types::monster::*;
 use thinking::Thinking;
