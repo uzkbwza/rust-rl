@@ -4,7 +4,6 @@ extern crate specs_derive;
 extern crate shrev;
 extern crate shred;
 extern crate shred_derive;
-extern crate rltk;
 
 #[macro_use]
 extern crate log;
