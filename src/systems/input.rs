@@ -5,12 +5,13 @@ use crate::command::{Command, CommandEvent};
 use crate::map::*;
 use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
-use rltk::VirtualKeyCode;
+use tcod::input::*;
+use tcod::console::*;
 
 #[derive(Debug)]
 pub struct Input {
-    key_queue: Vec<VirtualKeyCode>,
-    key_reader: Option<ReaderId<VirtualKeyCode>>,
+    command_queue: Vec<Command>,
+    key_reader: Option<ReaderId<Key>>,
 }
 
 pub trait KeyInterface {
@@ -20,26 +21,29 @@ pub trait KeyInterface {
 impl Input {
     pub fn new() -> Self {
         Input {
-            key_queue: Vec::new(),
+            command_queue: Vec::new(),
             key_reader: None,
         }
     }
 
-    fn get_command_from_key(key: VirtualKeyCode) -> Option<Command> {
-        match key {
-            // global commands
-            VirtualKeyCode::Escape => Some(Command::EndGame),
+    fn get_command_from_key(key: Key) -> Option<Command> {
+        match key.code {
+            KeyCode::Escape => Some(Command::EndGame),
 
-            // actor commands
-            VirtualKeyCode::H | VirtualKeyCode::Numpad4 => Some(Command::Move(Dir::W)),
-            VirtualKeyCode::J | VirtualKeyCode::Numpad2 => Some(Command::Move(Dir::S)),
-            VirtualKeyCode::K | VirtualKeyCode::Numpad8 => Some(Command::Move(Dir::N)),
-            VirtualKeyCode::L | VirtualKeyCode::Numpad6 => Some(Command::Move(Dir::E)),
-            VirtualKeyCode::Y | VirtualKeyCode::Numpad7 => Some(Command::Move(Dir::NW)),
-            VirtualKeyCode::U | VirtualKeyCode::Numpad9 => Some(Command::Move(Dir::NE)),
-            VirtualKeyCode::B | VirtualKeyCode::Numpad1 => Some(Command::Move(Dir::SW)),
-            VirtualKeyCode::N | VirtualKeyCode::Numpad3 => Some(Command::Move(Dir::SE)),
-            VirtualKeyCode::Period => Some(Command::Move(Dir::Nowhere)),
+            KeyCode::Char => match key.printable {
+                // actor commands
+                'h' => Some(Command::Move(Dir::W)),
+                'j' => Some(Command::Move(Dir::S)),
+                'k' => Some(Command::Move(Dir::N)),
+                'l' => Some(Command::Move(Dir::E)),
+                'y' => Some(Command::Move(Dir::NW)),
+                'u' => Some(Command::Move(Dir::NE)),
+                'b' => Some(Command::Move(Dir::SW)),
+                'n' => Some(Command::Move(Dir::SE)),
+                '.' => Some(Command::Move(Dir::Nowhere)),
+                _ => None,
+            },
+
             _ => None
         }
     }
@@ -55,7 +59,7 @@ pub struct InputSystemData<'a> {
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:          Read<'a, LazyUpdate>,
     pub world_resources: WriteExpect<'a, crate::WorldResources>,
-    pub key_channel:      Read<'a, EventChannel<VirtualKeyCode>>,
+    pub key_channel:      Read<'a, EventChannel<Key>>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
 }
 
@@ -66,15 +70,20 @@ impl<'a> System<'a> for Input {
 
         let keys = data.key_channel.read(self.key_reader.as_mut().unwrap());
         for key in keys {
-            self.key_queue.push(*key);
+            if self.command_queue.len() < 3 {
+                if let Some(command) = Self::get_command_from_key(*key) {
+                    self.command_queue.push(command);
+                }
+            }
         }
-        if self.key_queue.is_empty() { return }
 
-        let command = Self::get_command_from_key(self.key_queue.pop().unwrap());
+        if self.command_queue.is_empty() { return }
+        println!("{:?}", self.command_queue);
+        let command = self.command_queue.pop();
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
-
+                None => return,
                 // player commands
                 Some(Command::Move(dir)) => {
                     // attach action component to player entity
@@ -112,19 +121,45 @@ impl<'a> System<'a> for Input {
                 },
                 _ => (),
             }
+            println!("{:?}", command);
         }
     }
-    
+
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
         let command_event_channel: EventChannel<CommandEvent> = EventChannel::new();
         world.insert(command_event_channel);
-        let key_channel: EventChannel<VirtualKeyCode> = EventChannel::new();
-        world.insert(key_channel);
 
         // incoming input events
         self.key_reader = Some(world.
-            fetch_mut::<EventChannel<VirtualKeyCode>>()
+            fetch_mut::<EventChannel<Key>>()
             .register_reader());
+    }
+}
+
+pub struct InputListener;
+
+#[derive(SystemData)]
+pub struct InputListenerSystemData<'a> {
+    pub key_channel:      Write<'a, EventChannel<Key>>,
+    pub console: ReadExpect<'a, Root>,
+}
+
+impl<'a> System<'a> for InputListener {
+    type SystemData = InputListenerSystemData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        let key = data.console.check_for_keypress(KeyPressFlags::all());
+        if let Some(key_pressed) = key {
+            if key_pressed.pressed {
+                data.key_channel.single_write(key_pressed);
+            }
+        }
+    }
+
+    fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        let key_channel: EventChannel<Key> = EventChannel::new();
+        world.insert(key_channel);
     }
 }

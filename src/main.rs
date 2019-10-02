@@ -11,6 +11,7 @@ extern crate env_logger;
 
 use specs::prelude::*;
 use std::env;
+use tcod::console::*;
 
 mod entities;
 mod components;
@@ -22,6 +23,8 @@ mod ecs;
 mod render;
 mod input;
 use ecs::*;
+use shrev::EventChannel;
+use tcod::input::*;
 
 pub const SCREEN_WIDTH: i32 = 60;
 pub const SCREEN_HEIGHT: i32 = 35;
@@ -43,8 +46,12 @@ pub struct Ecs {
 impl Ecs {
     fn main_loop(&mut self) {
         loop {
-            self.dispatcher.dispatch(&mut self.world);
             self.world.maintain();
+            {
+                let mut root = self.world.write_resource::<Root>();
+                root.flush();
+            }
+            self.dispatcher.dispatch(&mut self.world);
         }
     }
 }

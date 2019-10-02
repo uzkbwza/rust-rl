@@ -20,7 +20,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .build()
 }
 
-pub fn _create_dummy(world: &mut World) -> Entity {
+pub fn create_dummy(world: &mut World) -> Entity {
     let mut rng = rand::thread_rng();
     let stats: (u32, u32, u32) = (10,rng.gen_range(2, 13),10);
     
@@ -92,7 +92,7 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
 }
 
 pub fn create_test_map(world: &mut World) {
-    create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
+    let player = create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
 
     for x in 0..MAP_WIDTH {
         for y in 0..MAP_HEIGHT {
@@ -111,7 +111,7 @@ pub fn create_test_map(world: &mut World) {
 
     create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
-    // for _ in 0..50 {
-    //     create_dummy(world, player);
-    // }
+     for _ in 0..50 {
+         create_dummy(world);
+     }
 }

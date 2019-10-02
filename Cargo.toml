@@ -17,7 +17,8 @@ rand = "0.7.2"
 array2d = "0.2.1"
 log = "0.4.8"
 env_logger = "0.7.0"
- rltk = { git = "https://github.com/thebracket/rltk_rs" }
+doryen-rs = "1.1.0"
+rltk = { git = "https://github.com/thebracket/rltk_rs" }
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]

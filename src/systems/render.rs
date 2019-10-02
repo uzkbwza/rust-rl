@@ -3,6 +3,7 @@ use crate::components::*;
 use crate::map::{View, VecMap};
 use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
 use tcod::map::FovAlgorithm;
+use tcod::console::*;
 
 
 pub type TileMap = VecMap<Option<Tile>>;
@@ -15,7 +16,7 @@ pub enum Elevation {
     _InAir,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Tile {
     pub position: Position,
     pub elevation: Elevation,
@@ -31,7 +32,7 @@ impl Tile {
             elevation: Elevation::Floor,
             glyph: ' ',
             fg_color: (255, 255, 255),
-            bg_color: Some((0, 0, 0))
+            bg_color: Some((0, 0, 0)),
         }
     }
 }
@@ -43,43 +44,51 @@ struct Viewport {
 
 impl Viewport {
 
-    fn update(&self, data: &mut RenderData) { Self::set_map(&self, data) }
-
-    pub fn set_tile(&self, pos: Position, camera_pos: Position, mut tile: Tile, tile_map: &mut TileMap) {
-        let rend_pos = self.get_screen_coordinates(pos, camera_pos);
+    pub fn set_tile(&self, mut tile: Tile, tile_map: &mut TileMap) {
+        let rend_pos = tile.position;
         let (x, y) = (rend_pos.x, rend_pos.y);
         if x < 0 || x >= self.width { return };
         if y < 0 || y >= self.height { return };
+
         if let Some(Some(existing_tile)) = tile_map.retrieve(x, y) {
+
             if tile.elevation < existing_tile.elevation {
-                return
+                tile.glyph = existing_tile.glyph;
+                tile.fg_color = existing_tile.fg_color;
             }
+
             if let Some(_) = existing_tile.bg_color {
                 if tile.bg_color == None {
                     tile.bg_color = existing_tile.bg_color
                 }
-            } else {
+            }
+
+            else {
                 if tile.bg_color == None {
                     tile.bg_color = Some((0, 0, 0))
                 }
             }
+
+
         }
 
         tile_map.set_point(x, y, Some(tile));
+
     }
 
     // creates full character map of what the player sees.
-    fn set_map(&self, data: &mut RenderData) {
+    fn set_map(&self, data: &mut RenderViewportData) {
 
         data.tile_map.reset_map();
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let mut elevation = Elevation::Upright;
-            
+
             if let Some(_) = data.floors.get(ent) {
                 elevation = Elevation::Floor
             }
+
             if let Some(_) = data.on_floors.get(ent) {
                 elevation = Elevation::OnFloor
             }
@@ -92,13 +101,12 @@ impl Viewport {
                 bg_color,
             };
 
-            // println!("{}", size_of_val(&tile.fg_color));
-
             let fov_map = data.view.map.lock().unwrap();
             if !fov_map.is_in_fov(pos.x, pos.y) {
                 tile = Tile::new();
             }
-            self.set_tile(*pos, camera_pos, tile, &mut data.tile_map);
+
+            self.set_tile(tile, &mut data.tile_map);
         }
     }
 
@@ -123,7 +131,7 @@ impl Viewport {
         Position::new(wx, wy)
     }
 
-    fn get_camera_position(&self,  data: &RenderData) -> Position {
+    fn get_camera_position(&self,  data: &RenderViewportData) -> Position {
         let mut camera_position = Position::new(0, 0);
         let viewport_width = self.width;
         let viewport_height = self.height;
@@ -157,7 +165,7 @@ impl Viewport {
 }
 
 #[derive(SystemData)]
-pub struct RenderData<'a> {
+pub struct RenderViewportData<'a> {
         entities: Entities<'a>,
         renderables: ReadStorage<'a, Renderable>,
         positions: ReadStorage<'a, Position>,
@@ -168,33 +176,62 @@ pub struct RenderData<'a> {
         world_resources: ReadExpect<'a, crate::WorldResources>,
         view: ReadExpect<'a, View>,
         tile_map: WriteExpect<'a, TileMap>,
+        console: WriteExpect<'a, Root>,
         // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
 
-pub struct Render {
+pub struct RenderViewport {
     viewport: Option<Viewport>
 }
 
-impl Render {
+impl RenderViewport {
     pub fn new() -> Self {
         let viewport = Some(Viewport {
             width: VIEWPORT_WIDTH, 
             height: VIEWPORT_HEIGHT
         });
         
-        Render {
+        RenderViewport {
             viewport
         }
     }
+
+    pub fn render(console: &mut Root, tile_map: &TileMap) {
+        for tile in tile_map.items.iter() {
+            if let Some(t) = tile {
+                Self::render_char(console, *t);
+            }
+        }
+    }
+
+    pub fn render_char(console: &mut Root, tile: Tile) {
+
+//        println!("{:?}", tile);
+        let (fg_r, fg_g, fg_b) = tile.fg_color;
+        let (bg_r, bg_g, bg_b) = tile.bg_color.expect("Tile does not have background value!");
+
+        let fg_color = tcod::colors::Color{ r: fg_r, g: fg_g, b: fg_b };
+        let bg_color = tcod::colors::Color{ r: bg_r, g: bg_g, b: bg_b };
+
+        console.put_char_ex(
+            tile.position.x + 1,
+            tile.position.y + 1,
+            tile.glyph,
+            fg_color,
+            bg_color
+        );
+
+    }
 }
 
-impl<'a> System<'a> for Render {
-    type SystemData = RenderData<'a>;
+impl<'a> System<'a> for RenderViewport {
+    type SystemData = RenderViewportData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.world_resources.player_turn {
             return
         }
+
 
         {
             let mut fov_map = data.view.map.lock().unwrap();
@@ -204,10 +241,17 @@ impl<'a> System<'a> for Render {
         }
 
         // tcod::system::set_fps(4);
-        self.viewport.as_mut().unwrap().update(&mut data);
-        
-        // tcod::system::set_fps(60);
-        // println!("{:?}", tcod::system::get_fps());
+        let mut viewport = self.viewport.as_mut().unwrap();
+        viewport.set_map(&mut data);
+
+        let tile_map = &data.tile_map;
+        let console = &mut data.console;
+
+        console.clear();
+        Self::render(console, tile_map);
+//        console.flush();
+
+
 
     }
     fn setup(&mut self, world: &mut World) {
