@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tcod = "0.15.0"
+tcod = "*"
 specs = "0.15.1"
 specs-derive = "0.4.0"
 shred = "0.9.3"
@@ -19,6 +19,7 @@ log = "0.4.8"
 env_logger = "0.7.0"
 doryen-rs = "1.1.0"
 rltk = { git = "https://github.com/thebracket/rltk_rs" }
+vecmap = { git = "https://github.com/uzkbwza/vecmap" }
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]

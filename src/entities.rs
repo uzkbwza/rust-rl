@@ -29,7 +29,7 @@ pub fn create_dummy(world: &mut World) -> Entity {
 
     let color = (rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
 
-    let chars = "obcdfsrxvlgZhq";
+    let chars = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
     let random_char = chars
         .chars()
         .choose(&mut rng)

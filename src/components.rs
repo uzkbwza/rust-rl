@@ -76,7 +76,7 @@ pub struct Actor {
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub struct Stats {
     pub strength: u32,
-    pub agility: u32, 
+    pub agility: u32,
     pub intelligence: u32,
 }
 

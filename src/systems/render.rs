@@ -1,12 +1,12 @@
 use specs::prelude::*;
 use crate::components::*;
-use crate::map::{View, VecMap};
-use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
+use crate::map::{View};
+use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y};
+use vecmap::*;
 use tcod::map::FovAlgorithm;
 use tcod::console::*;
 
-
-pub type TileMap = VecMap<Option<Tile>>;
+pub type TileMap = VecMap<Tile>;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Elevation {
@@ -32,7 +32,7 @@ impl Tile {
             elevation: Elevation::Floor,
             glyph: ' ',
             fg_color: (255, 255, 255),
-            bg_color: Some((0, 0, 0)),
+            bg_color: Some((0, 0, 0))
         }
     }
 }
@@ -47,10 +47,11 @@ impl Viewport {
     pub fn set_tile(&self, mut tile: Tile, tile_map: &mut TileMap) {
         let rend_pos = tile.position;
         let (x, y) = (rend_pos.x, rend_pos.y);
+
         if x < 0 || x >= self.width { return };
         if y < 0 || y >= self.height { return };
 
-        if let Some(Some(existing_tile)) = tile_map.retrieve(x, y) {
+        if let Ok(existing_tile) = tile_map.retrieve(x, y) {
 
             if tile.elevation < existing_tile.elevation {
                 tile.glyph = existing_tile.glyph;
@@ -72,8 +73,10 @@ impl Viewport {
 
         }
 
-        tile_map.set_point(x, y, Some(tile));
-
+        match tile_map.set_point(x, y, tile) {
+            Ok(_) => (),
+            Err(e) => println!("{}", e)
+        }
     }
 
     // creates full character map of what the player sees.
@@ -84,6 +87,7 @@ impl Viewport {
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let mut elevation = Elevation::Upright;
+
 
             if let Some(_) = data.floors.get(ent) {
                 elevation = Elevation::Floor
@@ -105,6 +109,8 @@ impl Viewport {
             if !fov_map.is_in_fov(pos.x, pos.y) {
                 tile = Tile::new();
             }
+
+//            println!("{:?}", tile);
 
             self.set_tile(tile, &mut data.tile_map);
         }
@@ -198,13 +204,14 @@ impl RenderViewport {
 
     pub fn render(console: &mut Root, tile_map: &TileMap) {
         for tile in tile_map.items.iter() {
-            if let Some(t) = tile {
-                Self::render_char(console, *t);
-            }
+            Self::render_char(console, *tile);
         }
     }
 
     pub fn render_char(console: &mut Root, tile: Tile) {
+
+        if tile.position.x < 0 || tile.position.x >= console.width() { return };
+        if tile.position.y < 0 || tile.position.y >= console.height() { return };
 
 //        println!("{:?}", tile);
         let (fg_r, fg_g, fg_b) = tile.fg_color;
@@ -214,8 +221,8 @@ impl RenderViewport {
         let bg_color = tcod::colors::Color{ r: bg_r, g: bg_g, b: bg_b };
 
         console.put_char_ex(
-            tile.position.x + 1,
-            tile.position.y + 1,
+            tile.position.x + VIEWPORT_POS_X,
+            tile.position.y + VIEWPORT_POS_Y,
             tile.glyph,
             fg_color,
             bg_color
@@ -228,10 +235,10 @@ impl<'a> System<'a> for RenderViewport {
     type SystemData = RenderViewportData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
+//        println!("got here");
         if !data.world_resources.player_turn {
             return
         }
-
 
         {
             let mut fov_map = data.view.map.lock().unwrap();

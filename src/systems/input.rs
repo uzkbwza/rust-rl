@@ -108,7 +108,7 @@ impl<'a> System<'a> for Input {
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
 
                             // attack enemy instead if closeby
-                            if let Some(_) = data.entity_map.actors.retrieve(dest.0, dest.1) {
+                            if let Ok(_) = data.entity_map.actors.retrieve(dest.0, dest.1) {
                                 command_event = CommandEvent::new(Command::Attack(dir), ent);
 
                                 // make sure bumping into walls doesnt take a turn

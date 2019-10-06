@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
+use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
 use crate::time;
 use crate::map;
 use crate::systems;
@@ -8,6 +8,8 @@ use rltk::RandomNumberGenerator;
 use std::sync::{Arc, Mutex};
 use tcod::map::Map as TcodMap;
 use tcod::console::*;
+use vecmap::*;
+use crate::systems::render::Tile;
 
 
 // previously GameState
@@ -46,9 +48,28 @@ impl MessageLog {
     }
 }
 
+pub struct Ecs {
+    world: World,
+    dispatcher: Dispatcher<'static, 'static>,
+}
+
+impl Ecs {
+    pub fn main_loop(&mut self) {
+        loop {
+            self.world.maintain();
+            {
+                let mut root = self.world.write_resource::<Root>();
+                root.flush();
+                if root.window_closed() { break }
+            }
+            self.dispatcher.dispatch(&mut self.world);
+        }
+    }
+}
+
 //pub struct
 
-pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
+pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
     let mut world = World::new();
     let builder = DispatcherBuilder::new()
 //         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
@@ -84,7 +105,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
     let message_log = MessageLog::new(30);
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("Anno_16x16.png", FontLayout::AsciiInRow)
+        .font("term2.png", FontLayout::AsciiInRow)
         .init();
 
     world.insert(world_resources);
@@ -92,13 +113,13 @@ pub fn world_setup<'a, 'b> (debug: bool) -> (World, Dispatcher<'a, 'b>) {
     world.insert(view);
     world.insert(message_log);
     world.insert(time::TurnQueue::new());
-    world.insert(systems::render::TileMap::filled_with(None));
+    world.insert(VecMap::<Tile>::filled_with(Tile::new(), MAP_WIDTH, MAP_HEIGHT));
     world.insert(RandomNumberGenerator::new());
     world.insert(root);
 
     entities::create_test_map(&mut world);
     dispatcher.dispatch(&mut world);
 
-    (world, dispatcher)
+    Ecs { world, dispatcher }
 }
 

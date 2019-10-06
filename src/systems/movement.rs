@@ -5,6 +5,7 @@ use crate::components::flags::requests::*;
 use crate::map::View;
 use tcod::map::Map as TcodMap;
 use crate::BASE_TURN_TIME;
+use vecmap::*;
 use crate::components::flags::ActionResult;
 
 // use crate::systems::control::{CommandEvent};
@@ -182,10 +183,16 @@ impl<'a> System<'a> for Movement {
                 let (dx, dy) = (move_event.dest_x, move_event.dest_y);
                 // remove collider from previous position
 
-                data.entity_map.actors.reset_point(x, y);
+                match data.entity_map.actors.reset_point(x, y) {
+                    Ok(_) => (),
+                    Err(e) => println!("{}", e)
+                }
                 view.set(x, y, true, true);
 
-                data.entity_map.actors.set_point(dx, dy, Some(ent));
+                match data.entity_map.actors.set_point(dx, dy, Some(ent)) {
+                    Ok(_) => (),
+                    Err(e) => println!("{}", e)
+                }
                 view.set(dx, dy, true, false);
 
                 if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
@@ -241,7 +248,10 @@ impl<'a> System<'a> for CollisionMapUpdater {
                 walkable = false
             }
             if let Some(_actor) = data.actors.get(ent) {
-                map.actors.set_point(pos.x, pos.y, Some(ent));
+                match map.actors.set_point(pos.x, pos.y, Some(ent)) {
+                    Ok(_) => (),
+                    Err(e) => println!("{}", e)
+                }
                 walkable = false;
             }
             view.set(pos.x, pos.y, transparent, walkable);
