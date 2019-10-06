@@ -2,4 +2,4 @@
 **/*.rs.bk
 /src/systems/render_old
 :
-rltk
+rltk.idea
