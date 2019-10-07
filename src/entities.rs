@@ -15,7 +15,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Quickness::new())
         .with(Renderable::new('@', (255,255,255), None))
         .with(Camera{})
-        .with(Corporeal::new(10, 5))
+        .with(Corporeal::new(10, 7))
         .with(Actor::from_stats(18, 18, 18))
         .with(PlayerControl{})
         .build()
@@ -67,7 +67,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, Some(bg_color)))
-        .with(Corporeal::new(1000, 100))
+        .with(Corporeal::new(100, 100))
         .with(Floor{})
         .build();
 }
@@ -78,7 +78,7 @@ pub fn create_wall(world: &mut World, x: i32, y: i32) {
         .with(Renderable::new('#', (255,255,255), Some((100,100,100,))))
         .with(BlockSight)
         .with(BlockMovement{})
-        .with(Corporeal::new(1000, 100))
+        .with(Corporeal::new(100, 100))
         .build();
 }
 
