@@ -91,7 +91,7 @@ impl<'a> System<'a> for Defend {
                 },
 
                 Some(_) => {
-                    data.message_log.log(String::from("The attack glances off!"));
+                    data.message_log.log(String::from("It's as if the attack is deflected by a divine force!"));
                 }
             }
         }

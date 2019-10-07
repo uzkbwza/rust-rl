@@ -9,6 +9,7 @@ use crate::MAP_HEIGHT;
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
         .with(Name::new("Player"))
+        .with(Invulnerable{})
         .with(Seeing::new(30))
         .with(Position::new(x,y))
         .with(Quickness::new())

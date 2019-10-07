@@ -28,16 +28,17 @@ use ecs::*;
 use shrev::EventChannel;
 use tcod::input::*;
 
-pub const SCREEN_WIDTH: i32 = 56;
-pub const SCREEN_HEIGHT: i32 = 31;
+pub const SCREEN_WIDTH: i32 = 81;
+pub const SCREEN_HEIGHT: i32 = 41;
 
 pub const VIEWPORT_WIDTH: i32 = SCREEN_WIDTH;
-pub const VIEWPORT_HEIGHT: i32 = SCREEN_HEIGHT - 6;
+pub const VIEWPORT_HEIGHT: i32 = SCREEN_HEIGHT - 10;
+
 pub const VIEWPORT_POS_X: i32 = 0;
 pub const VIEWPORT_POS_Y: i32 = 0;
 
-pub const MAP_WIDTH: i32 = 64;
-pub const MAP_HEIGHT: i32 = 64;
+pub const MAP_WIDTH: i32 = 100;
+pub const MAP_HEIGHT: i32 = 100;
 
 pub const BASE_TURN_TIME: u32 = 1000;
 pub const MIN_TURN_TIME: u32 = 1;
