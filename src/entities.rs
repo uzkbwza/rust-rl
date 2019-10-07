@@ -15,7 +15,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Quickness::new())
         .with(Renderable::new('@', (255,255,255), None))
         .with(Camera{})
-        .with(Corporeal::new(10, 2))
+        .with(Corporeal::new(10, 5))
         .with(Actor::from_stats(18, 18, 18))
         .with(PlayerControl{})
         .build()
