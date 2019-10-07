@@ -22,6 +22,7 @@ pub struct CombatSystemData<'a> {
     pub quicknesses: ReadStorage<'a, Quickness>,
     pub corporeals: WriteStorage<'a, Corporeal>,
     pub defenders: WriteStorage<'a, Defending>,
+    pub invulnerables: ReadStorage<'a, Invulnerable>,
 }
 
 impl Attack {
@@ -71,14 +72,27 @@ impl<'a> System<'a> for Defend {
 
     fn run(&mut self, mut data: Self::SystemData) {
         for (ent, pos, name, mut corporeal, defender) in (&data.entities, &data.positions, &data.names, &mut data.corporeals, &mut data.defenders).join() {
+            data.world_updater.remove::<Defending>(ent);
             let dmg = defender.damage_amount;
             let attacker = defender.damage_source;
-            let attacker_name = data.names.get(attacker).unwrap().name.clone();
-            corporeal.hp -= dmg;
-            data.message_log.log(format!("{} hits {} for {} damage!!", attacker_name, name.name, dmg));
-            if corporeal.hp <= 0 {
-                data.message_log.log(format!("{} dies!!!", name.name));
-                data.entities.delete(ent);
+            let mut attacker_name = match data.names.get(attacker) {
+                Some(name) => name.name.clone(),
+                None => String::from("ATTACKER"),
+            };
+
+            match data.invulnerables.get(ent) {
+                None => {
+                    corporeal.hp -= dmg;
+                    data.message_log.log(format!("{} hits {} for {} damage!!", attacker_name, name.name, dmg));
+                    if corporeal.hp <= 0 {
+                        data.message_log.log(format!("{} dies!!!", name.name));
+                        data.entities.delete(ent);
+                    }
+                },
+
+                Some(_) => {
+                    data.message_log.log(String::from("The attack glances off!"));
+                }
             }
         }
     }

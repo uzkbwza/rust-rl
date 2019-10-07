@@ -218,6 +218,9 @@ impl Seeing {
 #[storage(NullStorage)]
 pub struct BlockSight;
 
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Invulnerable;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
