@@ -111,7 +111,7 @@ pub fn create_test_map(world: &mut World) {
         create_wall(world, x, MAP_HEIGHT - 1);
     }
 
-//    create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
+    create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 7);
 
      for _ in 0..50 {
          create_dummy(world);
