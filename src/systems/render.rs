@@ -266,10 +266,10 @@ impl<'a> System<'a> for RenderUi {
     fn run(&mut self, mut data: Self::SystemData) {
         let message_log = data.message_log;
         let console = &mut data.console;
-        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT) as usize;
+        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT - 1) as usize;
         for (i, message) in message_log.messages.iter().enumerate() {
             if i > message_log_height { break }
-            console.print(0,SCREEN_HEIGHT - i as i32, message);
+            console.print(0,SCREEN_HEIGHT - 1 - i as i32, message);
         }
     }
 }

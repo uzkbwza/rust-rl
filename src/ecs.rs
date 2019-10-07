@@ -105,7 +105,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
     let message_log = MessageLog::new();
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .font("term.png", FontLayout::AsciiInRow)
+        .font("term3.png", FontLayout::AsciiInRow)
         .init();
 
     world.insert(game_state);
