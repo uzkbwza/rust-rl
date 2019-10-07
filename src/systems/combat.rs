@@ -74,7 +74,6 @@ impl<'a> System<'a> for Defend {
             let dmg = defender.damage_amount;
             let attacker = defender.damage_source;
             let attacker_name = data.names.get(attacker).unwrap().name.clone();
-            let attacker_name = "attacker";
             corporeal.hp -= dmg;
             data.message_log.log(format!("{} hits {} for {} damage!!", attacker_name, name.name, dmg));
             if corporeal.hp <= 0 {
