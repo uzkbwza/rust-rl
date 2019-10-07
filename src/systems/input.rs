@@ -58,7 +58,7 @@ pub struct InputSystemData<'a> {
     pub positions: ReadStorage<'a, Position>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:          Read<'a, LazyUpdate>,
-    pub world_resources: WriteExpect<'a, crate::WorldResources>,
+    pub game_state: WriteExpect<'a, crate::GameState>,
     pub key_channel:      Read<'a, EventChannel<Key>>,
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
 }
@@ -84,6 +84,9 @@ impl<'a> System<'a> for Input {
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
                 None => return,
+                // meta commands
+                Some(Command::EndGame) => { data.game_state.game_end = true }
+
                 // player commands
                 Some(Command::Move(dir)) => {
                     // attach action component to player entity
@@ -116,12 +119,12 @@ impl<'a> System<'a> for Input {
                         }
                         data.command_event_channel.single_write(command_event);
                         // println!("{:?}", command_event);
-                        data.world_resources.world_time.increment_player_turn();
+                        data.game_state.world_time.increment_player_turn();
                     }
                 },
                 _ => (),
             }
-            println!("{:?}", command);
+//            println!("{:?}", command);
         }
     }
 

@@ -5,5 +5,6 @@ pub mod time;
 pub mod input;
 pub mod ai;
 pub mod mapgen;
-pub mod attack;
+pub mod combat;
+pub mod naming;
 pub mod stats;

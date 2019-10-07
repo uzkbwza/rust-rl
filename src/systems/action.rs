@@ -23,7 +23,7 @@ pub struct ActionHandlerSystemData<'a> {
         players: WriteStorage<'a, PlayerControl>,
         attack_requests: WriteStorage<'a, AttackRequest>,
         my_turns: WriteStorage<'a, MyTurn>,
-        world_resources: WriteExpect<'a, crate::WorldResources>,
+        game_state: WriteExpect<'a, crate::GameState>,
 
         // read event channels
         command_event_channel: Read<'a, EventChannel<CommandEvent>>,
@@ -58,7 +58,7 @@ impl<'a> System<'a> for ActionHandler {
             }
             data.my_turns.remove(entity);
             if let Some(_) = data.players.get(entity) {
-                data.world_resources.player_turn = false;
+                data.game_state.player_turn = false;
                 // println!("turned off", );
             }
             // println!("removed my turn", );

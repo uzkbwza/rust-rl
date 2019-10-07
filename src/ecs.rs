@@ -12,32 +12,27 @@ use vecmap::*;
 use crate::systems::render::Tile;
 
 
-// previously GameState
-pub struct WorldResources {
+pub struct GameState {
     pub player_turn: bool,
     pub real_time: bool,
     pub debug: bool,
+    pub game_end: bool,
     pub world_time: time::WorldTime,
 }
 
 pub struct MessageLog {
     pub messages: Vec<String>,
-    pub capacity: usize,
 }
 
 impl MessageLog {
-    pub fn new(capacity: usize) -> Self {
+    pub fn new() -> Self {
         MessageLog {
             messages: Vec::new(),
-            capacity
         }
     }
 
     pub fn log(&mut self, string: String) {
         self.messages.insert(0, string);
-        if self.messages.len() > self.capacity {
-            self.messages.remove(self.capacity);
-        }
     }
 
     pub fn _pop(&mut self) -> Option<String> {
@@ -58,9 +53,10 @@ impl Ecs {
         loop {
             self.world.maintain();
             {
+                let game_state = self.world.read_resource::<GameState>();
                 let mut root = self.world.write_resource::<Root>();
                 root.flush();
-                if root.window_closed() { break }
+                if root.window_closed() || game_state.game_end { break }
             }
             self.dispatcher.dispatch(&mut self.world);
         }
@@ -73,42 +69,46 @@ pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
     let mut world = World::new();
     let builder = DispatcherBuilder::new()
 //         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
+        .with(systems::naming::Naming, "naming_sys", &[])
+        .with_barrier()
         .with(systems::input::InputListener, "input_listener_sys", &[])
         .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
         .with(systems::time::PlayerStartTurn, "player_start_turn_sys", &["turn_allocator_sys"])
-//        .with_barrier()
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
 //        .with_barrier()
         .with(systems::input::Input::new(), "input_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["ai_sys"])
         .with(systems::movement::Movement, "movement_sys", &["action_sys"])
-        .with(systems::attack::Attack, "attack_sys", &["movement_sys", "action_sys"])
+        .with(systems::combat::Attack, "attack_sys", &["movement_sys", "action_sys"])
+        .with(systems::combat::Defend, "defend_sys", &["attack_sys"])
 //        .with_barrier()
         .with(systems::time::EndTurn, "end_turn_sys", &[])
-        .with(systems::render::RenderViewport::new(), "render_viewport_sys", &[]);
+        .with(systems::render::RenderViewport::new(), "render_viewport_sys", &[])
+        .with(systems::render::RenderUi, "render_ui_sys", &[]);
 
     let mut dispatcher = builder.build();
     dispatcher.setup(&mut world);
 
     let world_time = time::WorldTime::new();
-    let world_resources = WorldResources {
+    let game_state = GameState {
         player_turn: false,
         real_time: false,
+        game_end: false,
         debug,
         world_time,
     };
 
     let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
     let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
-    let message_log = MessageLog::new(30);
+    let message_log = MessageLog::new();
     let root = Root::initializer()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
         .font("term2.png", FontLayout::AsciiInRow)
         .init();
 
-    world.insert(world_resources);
+    world.insert(game_state);
     world.insert(map);
     world.insert(view);
     world.insert(message_log);

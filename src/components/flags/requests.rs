@@ -19,7 +19,7 @@ impl MoveRequest {
 }
 
 #[derive(Component, Debug)]
-#[storage(VecStorage)]
+#[storage(HashMapStorage)]
 pub struct AttackRequest {
     pub dir: Dir,
 }

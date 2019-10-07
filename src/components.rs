@@ -30,7 +30,7 @@ impl Target {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, PartialEq)]
 #[storage(VecStorage)]
 pub struct Name {
     pub name: String
@@ -115,13 +115,15 @@ impl Actor {
 pub struct Corporeal {
     pub max_hp: i32,
     pub hp: i32,
+    pub base_damage: i32,
 }
 
 impl Corporeal {
-    pub fn new(max_hp: i32) -> Self {
+    pub fn new(max_hp: i32, base_damage: i32) -> Self {
         Corporeal {
             max_hp,
             hp: max_hp,
+            base_damage,
         }
     }
 }
@@ -171,6 +173,13 @@ impl Renderable {
 #[storage(VecStorage)]
 pub struct BoxRenderable {
     pub map: Vec<Vec<(char, RGB)>>,
+}
+
+#[derive(Component, Debug)]
+#[storage(HashMapStorage)]
+pub struct Defending {
+    pub damage_source: Entity,
+    pub damage_amount: i32,
 }
 
 #[derive(Component, Default, Debug)]

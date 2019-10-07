@@ -1,10 +1,11 @@
 use specs::prelude::*;
 use crate::components::*;
 use crate::map::{View};
-use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y};
+use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y, SCREEN_HEIGHT};
 use vecmap::*;
 use tcod::map::FovAlgorithm;
 use tcod::console::*;
+use crate::MessageLog;
 
 pub type TileMap = VecMap<Tile>;
 
@@ -80,7 +81,7 @@ impl Viewport {
     }
 
     // creates full character map of what the player sees.
-    fn set_map(&self, data: &mut RenderViewportData) {
+    fn set_map(&self, data: &mut RenderSystemData) {
 
         data.tile_map.reset_map();
         let camera_pos = self.get_camera_position(data);
@@ -137,7 +138,7 @@ impl Viewport {
         Position::new(wx, wy)
     }
 
-    fn get_camera_position(&self,  data: &RenderViewportData) -> Position {
+    fn get_camera_position(&self,  data: &RenderSystemData) -> Position {
         let mut camera_position = Position::new(0, 0);
         let viewport_width = self.width;
         let viewport_height = self.height;
@@ -171,7 +172,7 @@ impl Viewport {
 }
 
 #[derive(SystemData)]
-pub struct RenderViewportData<'a> {
+pub struct RenderSystemData<'a> {
         entities: Entities<'a>,
         renderables: ReadStorage<'a, Renderable>,
         positions: ReadStorage<'a, Position>,
@@ -179,10 +180,11 @@ pub struct RenderViewportData<'a> {
         cameras: ReadStorage<'a, Camera>,
         floors:    ReadStorage<'a, Floor>,
         on_floors:    ReadStorage<'a, OnFloor>,
-        world_resources: ReadExpect<'a, crate::WorldResources>,
+        game_state: ReadExpect<'a, crate::GameState>,
         view: ReadExpect<'a, View>,
         tile_map: WriteExpect<'a, TileMap>,
         console: WriteExpect<'a, Root>,
+        message_log: WriteExpect<'a, MessageLog>,
         // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
 
@@ -232,11 +234,11 @@ impl RenderViewport {
 }
 
 impl<'a> System<'a> for RenderViewport {
-    type SystemData = RenderViewportData<'a>;
+    type SystemData = RenderSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-//        println!("got here");
-        if !data.world_resources.player_turn {
+
+        if !data.game_state.player_turn {
             return
         }
 
@@ -247,7 +249,6 @@ impl<'a> System<'a> for RenderViewport {
             }
         }
 
-        // tcod::system::set_fps(4);
         let mut viewport = self.viewport.as_mut().unwrap();
         viewport.set_map(&mut data);
 
@@ -256,13 +257,19 @@ impl<'a> System<'a> for RenderViewport {
 
         console.clear();
         Self::render(console, tile_map);
-//        console.flush();
-
-
-
     }
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-    }
+}
 
+pub struct RenderUi;
+impl<'a> System<'a> for RenderUi {
+    type SystemData = RenderSystemData<'a>;
+    fn run(&mut self, mut data: Self::SystemData) {
+        let message_log = data.message_log;
+        let console = &mut data.console;
+        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT) as usize;
+        for (i, message) in message_log.messages.iter().enumerate() {
+            if i > message_log_height { break }
+            console.print(0,SCREEN_HEIGHT - i as i32, message);
+        }
+    }
 }

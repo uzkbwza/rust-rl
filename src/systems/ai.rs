@@ -36,7 +36,7 @@ pub struct AiSystemData<'a> {
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
     pub my_turns:   WriteStorage<'a, MyTurn>,
     pub world_updater:  Read<'a, LazyUpdate>,
-    pub world_resources: ReadExpect<'a, crate::WorldResources>,
+    pub game_state: ReadExpect<'a, crate::GameState>,
     pub view: ReadExpect<'a, View>,
 }
 
@@ -45,7 +45,7 @@ impl <'a> System<'a> for Ai {
     type SystemData = AiSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        if data.world_resources.player_turn {
+        if data.game_state.player_turn {
             return;
         }
 
