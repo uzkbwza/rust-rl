@@ -41,6 +41,7 @@ impl Tile {
 struct Viewport {
     width: i32,
     height: i32,
+    seen: TileMap,
 }
 
 impl Viewport {
@@ -81,7 +82,7 @@ impl Viewport {
     }
 
     // creates full character map of what the player sees.
-    fn set_map(&self, data: &mut RenderSystemData) {
+    fn set_map(&mut self, data: &mut RenderSystemData) {
 
         data.tile_map.reset_map();
         let camera_pos = self.get_camera_position(data);
@@ -98,8 +99,10 @@ impl Viewport {
                 elevation = Elevation::OnFloor
             }
 
+            let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
+
             let mut tile = Tile {
-                position: self.get_screen_coordinates(*pos, camera_pos),
+                position: screen_pos,
                 elevation,
                 glyph,
                 fg_color,
@@ -107,10 +110,19 @@ impl Viewport {
             };
 
             let fov_map = data.view.map.lock().unwrap();
+
             if !fov_map.is_in_fov(pos.x, pos.y) {
                 tile = Tile::new();
+                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
+                    tile = t;
+                    tile.position = screen_pos;
+                    tile.bg_color = None;
+                    tile.fg_color = (20, 20, 30);
+                } else { return }
+            } else {
+                self.seen.set_point(pos.x, pos.y, tile);
             }
-
+//
 //            println!("{:?}", tile);
 
             self.set_tile(tile, &mut data.tile_map);
@@ -196,7 +208,8 @@ impl RenderViewport {
     pub fn new() -> Self {
         let viewport = Some(Viewport {
             width: VIEWPORT_WIDTH, 
-            height: VIEWPORT_HEIGHT
+            height: VIEWPORT_HEIGHT,
+            seen: TileMap::filled_with(Tile::new(), MAP_WIDTH, MAP_HEIGHT)
         });
         
         RenderViewport {
