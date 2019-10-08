@@ -1,7 +1,7 @@
 use specs::prelude::*;
-use crate::{MAP_WIDTH, MAP_HEIGHT};
-use crate::components::*;
-use rand::prelude::*;
+//use crate::{MAP_WIDTH, MAP_HEIGHT};
+//use crate::components::*;
+//use rand::prelude::*;
 
 pub struct MapGen {
     initialized: bool

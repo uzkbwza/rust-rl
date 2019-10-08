@@ -49,6 +49,10 @@ pub fn create_dummy(world: &mut World) -> Entity {
         .build()
 }
 
+pub fn create_sword(world: &mut World, x: i32, y: i32) {
+
+}
+
 pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let mut rng = rand::thread_rng();
     let brightness: i16 = 25;

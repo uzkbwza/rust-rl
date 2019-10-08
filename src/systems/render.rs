@@ -1,11 +1,13 @@
 use specs::prelude::*;
 use crate::components::*;
 use crate::map::{View};
-use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y, SCREEN_HEIGHT};
+use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y, SCREEN_HEIGHT, SCREEN_WIDTH};
 use vecmap::*;
 use tcod::map::FovAlgorithm;
 use tcod::console::*;
 use crate::MessageLog;
+
+pub const MESSAGE_LOG_WIDTH: i32 = SCREEN_WIDTH;
 
 pub type TileMap = VecMap<Tile>;
 
@@ -282,10 +284,12 @@ impl<'a> System<'a> for RenderUi {
     fn run(&mut self, mut data: Self::SystemData) {
         let message_log = data.message_log;
         let console = &mut data.console;
-        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT - 1) as usize;
+        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT) as usize;
+        let mut formatted_message = String::new();
         for (i, message) in message_log.messages.iter().enumerate() {
             if i > message_log_height { break }
-            console.print(0,SCREEN_HEIGHT - 1 - i as i32, message);
+            formatted_message = format!("{}\n{}", message, formatted_message);
         }
+        console.print_rect(0,VIEWPORT_HEIGHT, MESSAGE_LOG_WIDTH, message_log_height as i32, formatted_message);
     }
 }
