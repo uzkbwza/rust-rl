@@ -4,6 +4,7 @@ use crate::systems::ai::types::AiType;
 use rand::prelude::*;
 use crate::MAP_WIDTH;
 use crate::MAP_HEIGHT;
+use crate::systems::render::Elevation;
 
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
@@ -13,7 +14,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Seeing::new(30))
         .with(Position::new(x,y))
         .with(Quickness::new())
-        .with(Renderable::new('@', (255,255,255), None))
+        .with(Renderable::new('@', (255,255,255), None, Elevation::Upright))
         .with(Camera{})
         .with(Corporeal::new(10, 7))
         .with(Actor::from_stats(18, 18, 18))
@@ -41,7 +42,7 @@ pub fn create_dummy(world: &mut World) -> Entity {
         .with(Seeing::new(20))
         .with(Quickness::new())
         .with(Position::new(x,y))
-        .with(Renderable::new(random_char, color, None))
+        .with(Renderable::new(random_char, color, None, Elevation::Upright))
         .with(Corporeal::new(10, 1))
         .with(Actor::from_stats(stats.0, stats.1, stats.2))
         // .with(Target { entity })
@@ -70,7 +71,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 
     world.create_entity()
         .with(Position::new(x,y))
-        .with(Renderable::new(random_char, color, Some(bg_color)))
+        .with(Renderable::new(random_char, color, Some(bg_color), Elevation::Floor))
         .with(Corporeal::new(100, 100))
         .with(Floor{})
         .build();
@@ -79,7 +80,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 pub fn create_wall(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x, y))
-        .with(Renderable::new('#', (255,255,255), Some((100,100,100,))))
+        .with(Renderable::new('#', (255,255,255), Some((100,100,100,)), Elevation::Upright))
         .with(BlockSight)
         .with(BlockMovement{})
         .with(Corporeal::new(100, 100))

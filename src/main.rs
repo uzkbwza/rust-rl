@@ -37,8 +37,8 @@ pub const VIEWPORT_HEIGHT: i32 = SCREEN_HEIGHT - 8;
 pub const VIEWPORT_POS_X: i32 = 0;
 pub const VIEWPORT_POS_Y: i32 = 0;
 
-pub const MAP_WIDTH: i32 = 100;
-pub const MAP_HEIGHT: i32 = 100;
+pub const MAP_WIDTH: i32 = 200;
+pub const MAP_HEIGHT: i32 = 200;
 
 pub const BASE_TURN_TIME: u32 = 1000;
 pub const MIN_TURN_TIME: u32 = 1;

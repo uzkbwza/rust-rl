@@ -4,6 +4,8 @@ use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
 use crate::BASE_TURN_TIME;
 use crate::MIN_TURN_TIME;
+use crate::systems::render::Elevation;
+
 pub mod flags;
 
 #[derive(Component, Default, Debug)]
@@ -161,11 +163,12 @@ pub struct Renderable {
     pub glyph: char,
     pub fg_color: (u8, u8, u8),
     pub bg_color: Option<(u8, u8, u8)>,
+    pub elevation: Elevation
 }
 
 impl Renderable {
-    pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>) -> Self {
-        Renderable { glyph, fg_color, bg_color }
+    pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>, elevation: Elevation) -> Self {
+        Renderable { glyph, fg_color, bg_color, elevation }
     }
 }
 

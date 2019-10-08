@@ -90,22 +90,11 @@ impl Viewport {
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
-            let mut elevation = Elevation::Upright;
-
-
-            if let Some(_) = data.floors.get(ent) {
-                elevation = Elevation::Floor
-            }
-
-            if let Some(_) = data.on_floors.get(ent) {
-                elevation = Elevation::OnFloor
-            }
-
             let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
 
             let mut tile = Tile {
                 position: screen_pos,
-                elevation,
+                elevation: renderable.elevation,
                 glyph,
                 fg_color,
                 bg_color,
