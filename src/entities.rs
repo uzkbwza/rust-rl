@@ -51,14 +51,14 @@ pub fn create_dummy(world: &mut World) -> Entity {
 
 pub fn create_floor(world: &mut World, x: i32, y: i32) {
     let mut rng = rand::thread_rng();
-    let brightness: i16 = 20;
-    let variation: i16 = 5;
+    let brightness: i16 = 25;
+    let variation: i16 = 3;
     let chars = ".,`rn ";
     let random_char = chars
         .chars()
         .choose(&mut rng)
         .unwrap();
-    let r = (5 + rng.gen_range(0, variation)) as u8;
+    let r = (10 + rng.gen_range(0, variation)) as u8;
     let g = (brightness + rng.gen_range(-variation, variation)) as u8;
     let b = (5 + rng.gen_range(0, variation)) as u8;
     let color = (r, g, b );

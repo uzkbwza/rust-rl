@@ -116,8 +116,8 @@ impl Viewport {
                 if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
                     tile = t;
                     tile.position = screen_pos;
-                    tile.bg_color = None;
-                    tile.fg_color = (20, 20, 30);
+                    tile.bg_color = Some((6, 8, 5));
+                    tile.fg_color = (10, 15, 8);
                 } else { return }
             } else {
                 self.seen.set_point(pos.x, pos.y, tile);
@@ -252,9 +252,11 @@ impl<'a> System<'a> for RenderViewport {
     fn run(&mut self, mut data: Self::SystemData) {
 
         if !data.game_state.player_turn {
+            tcod::system::set_fps(0);
             return
         }
 
+        tcod::system::set_fps(60);
         {
             let mut fov_map = data.view.map.lock().unwrap();
             for (pos, _player) in (&data.positions, &data.players).join() {
@@ -270,6 +272,7 @@ impl<'a> System<'a> for RenderViewport {
 
         console.clear();
         Self::render(console, tile_map);
+
     }
 }
 
