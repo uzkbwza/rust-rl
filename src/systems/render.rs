@@ -251,7 +251,7 @@ impl<'a> System<'a> for RenderViewport {
         {
             let mut fov_map = data.view.map.lock().unwrap();
             for (pos, _player) in (&data.positions, &data.players).join() {
-                fov_map.compute_fov(pos.x, pos.y, 100, true, FovAlgorithm::Basic);
+                fov_map.compute_fov(pos.x, pos.y, 100, true, FovAlgorithm::Restrictive);
             }
         }
 
