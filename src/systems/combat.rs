@@ -23,6 +23,7 @@ pub struct CombatSystemData<'a> {
     pub corporeals: WriteStorage<'a, Corporeal>,
     pub defenders: WriteStorage<'a, Defending>,
     pub invulnerables: ReadStorage<'a, Invulnerable>,
+    pub bodies: WriteStorage<'a, Body>,
 }
 
 impl Attack {

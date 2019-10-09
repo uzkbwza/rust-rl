@@ -10,6 +10,7 @@ use crate::systems::render::Elevation;
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
         .with(Name::new("Player"))
+        .with(Body::make_humanoid())
         .with(Invulnerable{})
         .with(Seeing::new(30))
         .with(Position::new(x,y))
@@ -40,6 +41,7 @@ pub fn create_dummy(world: &mut World) -> Entity {
     world.create_entity()
 //        .with(Name::new("Dummy"))
         .with(Seeing::new(20))
+        .with(Body::make_humanoid())
         .with(Quickness::new())
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None, Elevation::Upright))

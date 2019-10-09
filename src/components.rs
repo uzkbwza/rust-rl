@@ -2,6 +2,7 @@ use specs::prelude::*;
 use rltk::RGB;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
+use crate::bodyparts::*;
 use crate::BASE_TURN_TIME;
 use crate::MIN_TURN_TIME;
 use crate::systems::render::Elevation;
@@ -232,3 +233,130 @@ pub struct BlockMovement;
 #[derive(Component, PartialEq, Default, Debug)]
 #[storage(NullStorage)]
 pub struct CanSeeTarget;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Inventory {
+    pub items: Vec<Entity>,
+}
+
+#[derive(Component, Debug)]
+#[storage(DenseVecStorage)]
+pub struct Body {
+    core: BodyPart
+}
+
+impl Body {
+    pub fn new() -> Self {
+        let core = BodyPart {
+            name: String::from("Core"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Core],
+            armor_tags: vec![ArmorTag::Core],
+            equipped_armor: Vec::new(),
+        };
+
+        Body {
+            core
+        }
+    }
+
+    // TODO: use something like JSON to store bodypart templates
+    pub fn make_humanoid() -> Self {
+        let mut core = BodyPart {
+            name: String::from("Core"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Core],
+            armor_tags: vec![ArmorTag::Core],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut head = BodyPart {
+            name: String::from("Head"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::ThoughtCenter, BodyPartTag::Limb],
+            armor_tags: vec![ArmorTag::Head, ArmorTag::Jewelry(3)],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut left_arm = BodyPart {
+            name: String::from("Left Arm"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb],
+            armor_tags: vec![ArmorTag::Arm],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut right_arm = BodyPart {
+            name: String::from("Right Arm"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb],
+            armor_tags: vec![ArmorTag::Arm],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut left_hand = BodyPart {
+            name: String::from("Left Hand"),
+            children: Vec::new(),
+            //MY GAME MY RULES
+            tags: vec![BodyPartTag::Limb, BodyPartTag::Grasping, BodyPartTag::Dominant],
+            armor_tags: vec![ArmorTag::Hand, ArmorTag::Jewelry(5)],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut right_hand = BodyPart {
+            name: String::from("Right Hand"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb, BodyPartTag::Grasping],
+            armor_tags: vec![ArmorTag::Head, ArmorTag::Jewelry(5)],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut left_leg = BodyPart {
+            name: String::from("Left Leg"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb, BodyPartTag::Mobility],
+            armor_tags: vec![ArmorTag::Head],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut right_leg = BodyPart {
+            name: String::from("Right Leg"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb, BodyPartTag::Mobility],
+            armor_tags: vec![ArmorTag::Head],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut left_foot = BodyPart {
+            name: String::from("Left Foot"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb],
+            armor_tags: vec![ArmorTag::Head],
+            equipped_armor: Vec::new(),
+        };
+
+        let mut right_foot = BodyPart {
+            name: String::from("Right Foot"),
+            children: Vec::new(),
+            tags: vec![BodyPartTag::Limb],
+            armor_tags: vec![ArmorTag::Head],
+            equipped_armor: Vec::new(),
+        };
+
+        left_arm.add_child(left_hand);
+        left_leg.add_child(left_foot);
+        right_arm.add_child(right_hand);
+        right_leg.add_child(right_foot);
+
+        core.add_child(head);
+        core.add_child(left_arm);
+        core.add_child(left_leg);
+        core.add_child(right_arm);
+        core.add_child(right_leg);
+
+        Body {
+            core
+        }
+    }
+}
