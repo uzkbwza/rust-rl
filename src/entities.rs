@@ -8,7 +8,7 @@ use crate::CONFIG;
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
-        .with(Name::new("Wall"))
+        .with(Name::new("Player"))
         .with(Body::make_humanoid())
         .with(Invulnerable{})
         .with(Seeing::new(30))
