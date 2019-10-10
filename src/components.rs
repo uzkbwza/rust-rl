@@ -3,9 +3,8 @@ use rltk::RGB;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
 use crate::bodyparts::*;
-use crate::BASE_TURN_TIME;
-use crate::MIN_TURN_TIME;
 use crate::systems::render::Elevation;
+use crate::CONFIG;
 
 pub mod flags;
 
@@ -56,15 +55,15 @@ pub struct Quickness {
 impl Quickness {
     pub fn new() -> Self {
         Quickness {
-            quickness: BASE_TURN_TIME
+            quickness: CONFIG.base_turn_time
         }
     }
 
     pub fn modify_quickness(&mut self, modifier: i32) {
-        if modifier < BASE_TURN_TIME as i32 {
-            self.quickness = (BASE_TURN_TIME as i32 - modifier) as u32;
+        if modifier < CONFIG.base_turn_time as i32 {
+            self.quickness = (CONFIG.base_turn_time as i32 - modifier) as u32;
         } else {
-            self.quickness = MIN_TURN_TIME
+            self.quickness = CONFIG.min_turn_time
         }
     }
 }

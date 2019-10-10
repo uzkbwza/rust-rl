@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use tcod::map::Map as TcodMap;
 use std::sync::{Arc, Mutex};
-use crate::{MAP_WIDTH, MAP_HEIGHT};
+use crate::CONFIG;
 use vecmap::*;
 
 type ActorMap = VecMap<Option<Entity>>;
@@ -15,7 +15,7 @@ pub struct EntityMap {
 
 impl EntityMap {
     pub fn new(width: usize, height: usize) -> Self {
-        let actor_map = ActorMap::filled_with(None, MAP_WIDTH, MAP_HEIGHT);
+        let actor_map = ActorMap::filled_with(None, CONFIG.map_width, CONFIG.map_height);
         
         EntityMap {
             actors: actor_map,

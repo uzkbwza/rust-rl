@@ -2,14 +2,13 @@ use specs::prelude::*;
 use crate::components::*;
 use crate::systems::ai::types::AiType;
 use rand::prelude::*;
-use crate::MAP_WIDTH;
-use crate::MAP_HEIGHT;
 use crate::systems::render::Elevation;
+use crate::CONFIG;
 
 
 pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
     world.create_entity()
-        .with(Name::new("Player"))
+        .with(Name::new("Wall"))
         .with(Body::make_humanoid())
         .with(Invulnerable{})
         .with(Seeing::new(30))
@@ -23,12 +22,9 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .build()
 }
 
-pub fn create_dummy(world: &mut World) -> Entity {
+pub fn create_dummy(world: &mut World, x: i32, y: i32) -> Entity {
     let mut rng = rand::thread_rng();
     let stats: (u32, u32, u32) = (10,rng.gen_range(2, 13),10);
-    
-    let x: i32 = rng.gen_range(0, crate::MAP_WIDTH);
-    let y: i32 = rng.gen_range(0, crate::MAP_HEIGHT);
 
     let color = (rng.gen_range(0,255), rng.gen_range(0, 255), rng.gen_range(0, 255));
 
@@ -50,10 +46,6 @@ pub fn create_dummy(world: &mut World) -> Entity {
         // .with(Target { entity })
         .with(AiControl { ai_type: AiType::Monster })
         .build()
-}
-
-pub fn create_sword(world: &mut World, x: i32, y: i32) {
-
 }
 
 pub fn create_floor(world: &mut World, x: i32, y: i32) {
@@ -101,26 +93,29 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
 }
 
 pub fn create_test_map(world: &mut World) {
-    let player = create_player(world, MAP_WIDTH/2, MAP_HEIGHT/2);
+    let mut rng = rand::thread_rng();
+    let player = create_player(world, CONFIG.map_width/2, CONFIG.map_height/2);
 
-    for x in 0..MAP_WIDTH {
-        for y in 0..MAP_HEIGHT {
+    for x in 0..CONFIG.map_width {
+        for y in 0..CONFIG.map_height {
             create_floor(world, x, y);
         }
     }
 
-    for y in 0..MAP_HEIGHT {
-        create_wall(world, MAP_WIDTH - 1, y);
+    for y in 0..CONFIG.map_height {
+        create_wall(world, CONFIG.map_width - 1, y);
         create_wall(world, 0, y);
     }
-    for x in 0..MAP_WIDTH {
+    for x in 0..CONFIG.map_width {
         create_wall(world, x, 0);
-        create_wall(world, x, MAP_HEIGHT - 1);
+        create_wall(world, x, CONFIG.map_height - 1);
     }
 
-    create_shack(world, MAP_WIDTH/2, MAP_HEIGHT/2, 3);
+    create_shack(world, CONFIG.map_width/2, CONFIG.map_height/2, 7);
 
      for _ in 0..50 {
-         create_dummy(world);
+         let x: i32 = rng.gen_range(0, CONFIG.map_width);
+         let y: i32 = rng.gen_range(0, CONFIG.map_height);
+         create_dummy(world, x, y);
      }
 }

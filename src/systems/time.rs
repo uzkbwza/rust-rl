@@ -2,14 +2,17 @@ use specs::prelude::*;
 use crate::components::*;
 use crate::components::flags::ActionResult;
 use crate::time::Turn;
+use crate::CONFIG;
 
 #[derive(SystemData)]
 pub struct TurnAllocatorSystemData<'a> {
     entities: Entities<'a>,
     my_turns: WriteStorage<'a, MyTurn>,
     actors: WriteStorage<'a, Actor>,
+    players: ReadStorage<'a, PlayerControl>,
     game_state: WriteExpect<'a, crate::GameState>,
     turn_queue: WriteExpect<'a, crate::time::TurnQueue>,
+    message_log: WriteExpect<'a, crate::MessageLog>,
 }
 
 pub struct TurnAllocator;
@@ -28,7 +31,6 @@ impl<'a> System<'a> for TurnAllocator {
             }
 
             let next_turn = data.turn_queue.peek().unwrap().tick;
-            // println!("{:?}", data.turn_queue.peek());
 
             // loop through all "next turns" that store the same tick, making sure all actors who are ready
             // on the same turn get to act on the same gameloop iteration (unordered) 
@@ -40,29 +42,16 @@ impl<'a> System<'a> for TurnAllocator {
                 if let Err(err) = data.my_turns.insert(turn.entity, MyTurn{}) {
                     error!("Failed to insert turn: {}", err)
                 }
+                
+                if let Some(_) = data.players.get(turn.entity) {
+                    if !data.game_state.player_turn {
+                        data.game_state.player_turn = true;
+                        if CONFIG.log_turn_start {
+                            data.message_log.log(String::from("[TURN START]"));
+                        }
+                    }
+                }
                 // println!("turn queue length: {:?}", data.turn_queue.len());
-            }
-        }
-    }
-}
-
-#[derive(SystemData)]
-pub struct PlayerStartTurnSystemData<'a> {
-    entities: Entities<'a>,
-    game_state: WriteExpect<'a, crate::GameState>,
-    my_turns: ReadStorage<'a, MyTurn>,
-    players: ReadStorage<'a, PlayerControl>,
-}
-
-pub struct PlayerStartTurn;
-impl<'a> System<'a> for PlayerStartTurn {
-    type SystemData = PlayerStartTurnSystemData<'a>;
-    fn run(&mut self, mut data: Self::SystemData) {
-        for (ent, _player) in (&data.entities, &data.players).join() {
-            if let Some(_my_turn) = &data.my_turns.get(ent) {
-                data.game_state.player_turn = true;
-            } else {
-                data.game_state.player_turn = false;
             }
         }
     }
@@ -73,9 +62,7 @@ pub struct EndTurnSystemData<'a> {
     entities: Entities<'a>,
     actors: WriteStorage<'a, Actor>,
     action_results: WriteStorage<'a, ActionResult>,
-    _world_updater: Read<'a, LazyUpdate>,
     game_state: WriteExpect<'a, crate::GameState>,
-    _turn_queue: WriteExpect<'a, crate::time::TurnQueue>,
     players: ReadStorage<'a, PlayerControl>,
 }
 

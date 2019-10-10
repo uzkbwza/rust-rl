@@ -1,5 +1,4 @@
 use specs::prelude::*;
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT};
 use crate::time;
 use crate::map;
 use crate::systems;
@@ -10,12 +9,12 @@ use tcod::map::Map as TcodMap;
 use tcod::console::*;
 use vecmap::*;
 use crate::systems::render::Tile;
+use crate::CONFIG;
 
 
 pub struct GameState {
     pub player_turn: bool,
     pub real_time: bool,
-    pub debug: bool,
     pub game_end: bool,
     pub world_time: time::WorldTime,
 }
@@ -65,7 +64,8 @@ impl Ecs {
 
 //pub struct
 
-pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
+pub fn world_setup<'a, 'b> () -> Ecs {
+//    println!("{:?}", CONFIG);
     let mut world = World::new();
     let builder = DispatcherBuilder::new()
 //         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
@@ -75,7 +75,6 @@ pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
         .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
-        .with(systems::time::PlayerStartTurn, "player_start_turn_sys", &["turn_allocator_sys"])
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
 //        .with_barrier()
         .with(systems::input::Input::new(), "input_sys", &[])
@@ -96,15 +95,14 @@ pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
         player_turn: false,
         real_time: false,
         game_end: false,
-        debug,
         world_time,
     };
 
-    let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(MAP_WIDTH, MAP_HEIGHT))) };
-    let map = map::EntityMap::new(MAP_WIDTH as usize, MAP_HEIGHT as usize);
+    let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(CONFIG.map_width, CONFIG.map_height))) };
+    let map = map::EntityMap::new(CONFIG.map_width as usize, CONFIG.map_height as usize);
     let message_log = MessageLog::new();
     let root = Root::initializer()
-        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+        .size(CONFIG.screen_width, CONFIG.screen_height)
         .font("term3.png", FontLayout::AsciiInRow)
         .init();
 
@@ -113,7 +111,7 @@ pub fn world_setup<'a, 'b> (debug: bool) -> Ecs {
     world.insert(view);
     world.insert(message_log);
     world.insert(time::TurnQueue::new());
-    world.insert(VecMap::<Tile>::filled_with(Tile::new(), MAP_WIDTH, MAP_HEIGHT));
+    world.insert(VecMap::<Tile>::filled_with(Tile::new(), CONFIG.map_width, CONFIG.map_height));
     world.insert(RandomNumberGenerator::new());
     world.insert(root);
 

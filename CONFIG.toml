@@ -1,0 +1,15 @@
+screen_width = 80
+screen_height = 33
+
+viewport_width = 80
+viewport_height = 25
+viewport_x = 0
+viewport_y = 0
+
+map_width = 80
+map_height = 25
+
+base_turn_time = 1000000000
+min_turn_time = 1
+
+log_turn_start = true

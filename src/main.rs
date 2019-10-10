@@ -5,6 +5,7 @@ extern crate specs_derive;
 extern crate shrev;
 extern crate shred;
 extern crate shred_derive;
+extern crate toml;
 
 #[macro_use]
 extern crate log;
@@ -15,6 +16,7 @@ use specs::prelude::*;
 use std::env;
 use tcod::console::*;
 
+mod config;
 mod entities;
 mod components;
 mod map;
@@ -29,26 +31,15 @@ use ecs::*;
 use shrev::EventChannel;
 use tcod::input::*;
 
-pub const SCREEN_WIDTH: i32 = 80;
-pub const SCREEN_HEIGHT: i32 = 33;
+#[macro_use]
+extern crate lazy_static;
 
-pub const VIEWPORT_WIDTH: i32 = SCREEN_WIDTH;
-pub const VIEWPORT_HEIGHT: i32 = SCREEN_HEIGHT - 8;
-
-pub const VIEWPORT_POS_X: i32 = 0;
-pub const VIEWPORT_POS_Y: i32 = 0;
-
-pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 25;
-
-pub const BASE_TURN_TIME: u32 = 1000;
-pub const MIN_TURN_TIME: u32 = 1;
-
+lazy_static! {
+    #[derive(Debug)]
+    static ref CONFIG: config::Config = config::Config::open();
+}
 
 fn main() {
-    let mut debug = false;
-    let args: Vec<String> = env::args().collect();
-    if args.contains(&String::from("debug")) { debug = true; }
-    let mut ecs= ecs::world_setup(debug);
+    let mut ecs= ecs::world_setup();
     ecs.main_loop();
 }

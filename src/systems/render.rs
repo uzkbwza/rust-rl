@@ -1,13 +1,11 @@
 use specs::prelude::*;
 use crate::components::*;
 use crate::map::{View};
-use crate::{MAP_WIDTH, MAP_HEIGHT, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, VIEWPORT_POS_X, VIEWPORT_POS_Y, SCREEN_HEIGHT, SCREEN_WIDTH};
 use vecmap::*;
 use tcod::map::FovAlgorithm;
 use tcod::console::*;
 use crate::MessageLog;
-
-pub const MESSAGE_LOG_WIDTH: i32 = SCREEN_WIDTH;
+use crate::CONFIG;
 
 pub type TileMap = VecMap<Tile>;
 
@@ -136,8 +134,8 @@ impl Viewport {
         let screen_center = Position::new(self.width / 2, self.height / 2);
         let mut wx = rend_pos.x - screen_center.x + camera_pos.x;
         let mut wy = rend_pos.x - screen_center.x + camera_pos.y;
-        if wx > MAP_WIDTH { wx = MAP_WIDTH }
-        if wy > MAP_HEIGHT { wy = MAP_HEIGHT }
+        if wx > CONFIG.map_width { wx = CONFIG.map_width }
+        if wy > CONFIG.map_height { wy = CONFIG.map_height }
         Position::new(wx, wy)
     }
 
@@ -145,26 +143,26 @@ impl Viewport {
         let mut camera_position = Position::new(0, 0);
         let viewport_width = self.width;
         let viewport_height = self.height;
-        if viewport_width < MAP_WIDTH {
+        if viewport_width < CONFIG.map_width {
             for (pos, _camera) in (&data.positions, &data.cameras).join() {
                 camera_position.x = pos.x;
                 if camera_position.x - viewport_width / 2 < 0 {
                     camera_position.x = viewport_width / 2;
-                } else if camera_position.x + viewport_width / 2 > MAP_WIDTH {
-                    camera_position.x = MAP_WIDTH - viewport_width / 2
+                } else if camera_position.x + viewport_width / 2 > CONFIG.map_width {
+                    camera_position.x = CONFIG.map_width - viewport_width / 2
                 }
             }
         } else {
             camera_position.x = viewport_width / 2
         }
 
-        if viewport_height < MAP_HEIGHT {
+        if viewport_height < CONFIG.map_height {
             for (pos, _camera) in (&data.positions, &data.cameras).join() {
                 camera_position.y = pos.y;
                 if camera_position.y - viewport_height / 2 < 1 {
                     camera_position.y = viewport_height / 2;
-                } else if camera_position.y + viewport_height / 2 > MAP_HEIGHT {
-                    camera_position.y = MAP_HEIGHT - viewport_height / 2
+                } else if camera_position.y + viewport_height / 2 > CONFIG.map_height {
+                    camera_position.y = CONFIG.map_height - viewport_height / 2
                 }
             }
         } else {
@@ -198,9 +196,9 @@ pub struct RenderViewport {
 impl RenderViewport {
     pub fn new() -> Self {
         let viewport = Some(Viewport {
-            width: VIEWPORT_WIDTH, 
-            height: VIEWPORT_HEIGHT,
-            seen: TileMap::filled_with(Tile::new(), MAP_WIDTH, MAP_HEIGHT)
+            width: CONFIG.viewport_width,
+            height: CONFIG.viewport_height,
+            seen: TileMap::filled_with(Tile::new(), CONFIG.map_width, CONFIG.map_height)
         });
         
         RenderViewport {
@@ -227,8 +225,8 @@ impl RenderViewport {
         let bg_color = tcod::colors::Color{ r: bg_r, g: bg_g, b: bg_b };
 
         console.put_char_ex(
-            tile.position.x + VIEWPORT_POS_X,
-            tile.position.y + VIEWPORT_POS_Y,
+            tile.position.x + CONFIG.viewport_x,
+            tile.position.y + CONFIG.viewport_y,
             tile.glyph,
             fg_color,
             bg_color
@@ -273,12 +271,12 @@ impl<'a> System<'a> for RenderUi {
     fn run(&mut self, mut data: Self::SystemData) {
         let message_log = data.message_log;
         let console = &mut data.console;
-        let message_log_height = (SCREEN_HEIGHT - VIEWPORT_HEIGHT) as usize;
+        let message_log_height = (CONFIG.screen_height - CONFIG.viewport_height) as usize;
         let mut formatted_message = String::new();
         for (i, message) in message_log.messages.iter().enumerate() {
             if i > message_log_height { break }
             formatted_message = format!("{}\n{}", message, formatted_message);
         }
-        console.print_rect(0,VIEWPORT_HEIGHT, MESSAGE_LOG_WIDTH, message_log_height as i32, formatted_message);
+        console.print_rect(0,CONFIG.viewport_height, CONFIG.screen_width, message_log_height as i32, formatted_message);
     }
 }

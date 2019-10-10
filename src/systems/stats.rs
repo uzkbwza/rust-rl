@@ -1,7 +1,6 @@
 use specs::prelude::*;
 use crate::components::*;
-use crate::BASE_TURN_TIME;
-
+use crate::CONFIG;
 pub struct _StatCalculator;
 
 #[derive(SystemData)]
@@ -14,7 +13,7 @@ pub struct QuicknessSystem;
 impl QuicknessSystem {
     fn quickness_from_agility(agility: u32) -> i32 {
         let agility = agility as i32;
-        let base = BASE_TURN_TIME as i32;
+        let base = CONFIG.base_turn_time as i32;
 
         if agility > 9 {
             (agility - 10) * (base as i32 / 100)

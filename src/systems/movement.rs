@@ -4,8 +4,8 @@ use crate::components::*;
 use crate::components::flags::requests::*;
 use crate::map::View;
 use tcod::map::Map as TcodMap;
-use crate::BASE_TURN_TIME;
 use vecmap::*;
+use crate::CONFIG;
 use crate::components::flags::ActionResult;
 
 // use crate::systems::control::{CommandEvent};
@@ -106,15 +106,15 @@ impl Movement {
             dest_y = start_y;
         }
 
-        if dest_x >= crate::MAP_WIDTH {
+        if dest_x >= CONFIG.map_width {
             dest_x = 0;
         } else if dest_x <= -1 {
-            dest_x = crate::SCREEN_WIDTH - 1;
+            dest_x = CONFIG.screen_width - 1;
         }
-        if dest_y >= crate::MAP_HEIGHT {
+        if dest_y >= CONFIG.map_height {
             dest_y = 0;
         } else if dest_y <= -1 {
-            dest_y = crate::MAP_HEIGHT - 1;
+            dest_y = CONFIG.map_height - 1;
         }
 
         position.x = dest_x;
@@ -176,7 +176,7 @@ impl<'a> System<'a> for Movement {
 
                 let cost = match data.quicknesses.get(ent) {
                     Some(quickness) => Self::get_cost(quickness.quickness, cost_modifier),
-                    None => Self::get_cost(BASE_TURN_TIME, cost_modifier),
+                    None => Self::get_cost(CONFIG.base_turn_time, cost_modifier),
                 };
 
                 let (x, y) = (move_event.start_x, move_event.start_y);

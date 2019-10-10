@@ -1485,15 +1485,18 @@ dependencies = [
  "array2d 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "doryen-rs 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rltk 0.3.1 (git+https://github.com/thebracket/rltk_rs)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
  "shred 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "shred-derive 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrev 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.15.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs-derive 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tcod 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "vecmap 0.1.0 (git+https://github.com/uzkbwza/vecmap)",
 ]
 
@@ -1574,6 +1577,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "serde"
 version = "1.0.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "serde_derive 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "serde_derive"
@@ -1883,6 +1889,14 @@ dependencies = [
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-executor 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "toml"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2504,6 +2518,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum tokio-executor 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0f27ee0e6db01c5f0b2973824547ce7e637b2ed79b891a9677b0de9bd532b6ac"
 "checksum tokio-timer 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "f2106812d500ed25a4f38235b9cae8f78a09edf43203e16e59c3b769a342a60e"
+"checksum toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "c7aabe75941d914b72bf3e5d3932ed92ce0664d49d8432305a8b547c37227724"
 "checksum tuple_utils 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44834418e2c5b16f47bedf35c28e148db099187dd5feee6367fb2525863af4f1"
 "checksum uni-app 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c7c7b65a74cbb36fc69f4c7e43022ed9dac2a15c93359431ba8fb1b4d8656b0b"
 "checksum uni-gl 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4dcec3a54a2fea3dbb28e5fd76ce394269656d5591a9504570dcc4e6009af5df"

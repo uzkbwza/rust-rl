@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use crate::BASE_TURN_TIME;
+use crate::CONFIG;
 
 pub type TurnQueue = BinaryHeap<Turn>;
 
@@ -46,7 +46,7 @@ impl WorldTime {
     }
 
     pub fn determine_world_turn(&mut self) {
-        self.world_turns = (self.tick / BASE_TURN_TIME as u64) as u32
+        self.world_turns = (self.tick / CONFIG.base_turn_time as u64) as u32
     }
 
     pub fn increment_player_turn(&mut self) {

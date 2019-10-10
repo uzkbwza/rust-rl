@@ -4,7 +4,7 @@ use crate::components::flags::requests::*;
 use crate::systems::movement::Dir;
 use crate::ecs::MessageLog;
 use crate::components::flags::*;
-use crate::BASE_TURN_TIME;
+use crate::CONFIG;
 
 pub struct Attack;
 
@@ -55,7 +55,7 @@ impl<'a> System<'a> for Attack {
 
             let cost = match data.quicknesses.get(ent) {
                 Some(quickness) => Self::get_cost(quickness.quickness, 1.0),
-                None => Self::get_cost(BASE_TURN_TIME, 1.0),
+                None => Self::get_cost(CONFIG.base_turn_time, 1.0),
             };
 
             if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
