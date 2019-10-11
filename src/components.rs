@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::bodyparts::*;
 use crate::systems::render::Elevation;
 use crate::CONFIG;
+use crate::command::Command;
 
 pub mod flags;
 
@@ -68,11 +69,12 @@ impl Quickness {
     }
 }
 
-#[derive(Component, Copy, Clone, PartialEq, Debug)]
+#[derive(Component, Clone, PartialEq, Debug)]
 #[storage(DenseVecStorage)]
 pub struct Actor {
     pub next_turn: u64,
-    pub stats: Stats
+    pub stats: Stats,
+    pub command_sequence: Vec<Command>,
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -83,7 +85,7 @@ pub struct Stats {
 }
 
 impl Actor {
-    pub fn _new() -> Self {
+    pub fn new() -> Self {
         let stats = Stats {
                 strength: 10,
                 agility: 10,
@@ -91,7 +93,9 @@ impl Actor {
 
         Actor { 
             next_turn: 0,
-            stats
+            stats,
+            command_sequence: Vec::new(),
+
         }
     }
 
@@ -102,7 +106,8 @@ impl Actor {
                 strength,
                 agility,
                 intelligence
-            }
+            },
+            command_sequence: Vec::new(),
         }
     }
 

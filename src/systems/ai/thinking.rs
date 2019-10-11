@@ -4,5 +4,5 @@ use super::AiSystemData;
 
 
 pub trait Thinking {
-    fn get_command(entity: Entity, data: &AiSystemData) -> Command;
+    fn get_command(entity: Entity, data: &AiSystemData) -> Vec<Command>;
 }

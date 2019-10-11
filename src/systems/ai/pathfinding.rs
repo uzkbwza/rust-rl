@@ -43,7 +43,7 @@ pub fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_m
 }
 
 
-pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
+pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Vec<Dir> {
     if let (Some(target), Some(pos), Some(seer)) = (data.targets.get(entity), data.positions.get(entity), data.seers.get(entity)) {
         if let Some(dest) = data.positions.get(target.entity) {
             
@@ -59,25 +59,25 @@ pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Dir {
 
             if pathfinder.find((dest_point.0, dest_point.1)) {
                 if let Some(_) = pathfinder.get(0) {
-                    step_pos = pathfinder.walk_one_step().unwrap(); 
+                    let mut path = Vec::new();
+                    for step in pathfinder.iter() {
+                        let dx = step.0 - pos.x;
+                        let dy = step.1 - pos.y;
+                        let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
+                        let dx = (dx as f32 / distance).round() as i32;
+                        let dy = (dy as f32 / distance).round() as i32;
+                        if pos.x == step.0 && pos.y == step.1 {
+                            path.push(Dir::Nowhere);
+                            return path
+                        }
+                        path.insert( 0, Dir::pos_to_dir((dx, dy)));
+                    }
+                    return path
                 }
             } else {
-                return Dir::Nowhere;
+                return vec![Dir::Nowhere];
             }
-
-
-            if pos.x == step_pos.0 && pos.y == step_pos.1 {
-                return Dir::Nowhere;
-            }
-
-            let dx = step_pos.0 - pos.x;
-            let dy = step_pos.1 - pos.y;
-            let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
-            let dx = (dx as f32 / distance).round() as i32;
-            let dy = (dy as f32 / distance).round() as i32;
-
-            return Dir::pos_to_dir((dx, dy))
         }
     }
-    Dir::Nowhere
+    vec![Dir::Nowhere]
 }

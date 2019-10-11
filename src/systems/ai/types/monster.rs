@@ -10,7 +10,7 @@ use super::super::pathfinding;
 pub struct Monster;
 
 impl Thinking for Monster {
-    fn get_command(entity: Entity, data: &AiSystemData) -> Command {
+    fn get_command(entity: Entity, data: &AiSystemData) -> Vec<Command> {
         if Self::can_target_player(entity, data) {
             if let (Some(pos), Some(target)) = (data.positions.get(entity), data.targets.get(entity)) {
                 if let Some(target_pos) = data.positions.get(target.entity) {
@@ -20,13 +20,19 @@ impl Thinking for Monster {
                     
                     // check if adjacent
                     if i32::abs(dx) <= 1 && i32::abs(dy) <= 1 {
-                        return Command::Attack(Dir::pos_to_dir((dx, dy)))
+                        return vec![Command::Attack(Dir::pos_to_dir((dx, dy)))]
                     }
-                    return Command::Move(pathfinding::path_to_target(entity, data))
+
+                    let mut path = Vec::new();
+
+                    for step in pathfinding::path_to_target(entity, data) {
+                        path.push(Command::Move(step));
+                    }
+                    return path;
                 }
             }
         }
-        return Command::Move(Dir::Nowhere)
+        return vec![Command::Move(Dir::Nowhere)]
     }
 }
 
