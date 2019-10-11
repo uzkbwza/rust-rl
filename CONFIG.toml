@@ -9,7 +9,8 @@ viewport_y = 0
 map_width = 80
 map_height = 25
 
-base_turn_time = 1000000000
+# 1 turn = 1 second
+base_turn_time = 1000
 min_turn_time = 1
 
 log_turn_start = true
