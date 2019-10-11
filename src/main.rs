@@ -24,7 +24,6 @@ mod command;
 mod time;
 mod systems;
 mod ecs;
-mod input;
 mod bodyparts;
 
 use ecs::*;
