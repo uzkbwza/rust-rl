@@ -57,7 +57,7 @@ impl Monster {
                     if data.sees_targets.get(entity) == None {
                         // println!("gained sight");
                         data.world_updater.insert(entity, CanSeeTarget{});
-                        data.world_updater.insert(entity, Target::new(player_entity));
+                        data.world_updater.insert(entity, Target::new(player_entity, *target_pos));
                         return true
                     }
                 }

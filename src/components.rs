@@ -18,12 +18,14 @@ pub struct PrintDebug;
 pub struct Target {
     pub entity: Entity,
     pub give_up_timer: u32,
+    pub position: Position,
 }
 
 impl Target {
-    pub fn new(entity: Entity) -> Self {
+    pub fn new(entity: Entity, position: Position) -> Self {
         Target {
             entity,
+            position,
             give_up_timer: 15
         }
     }

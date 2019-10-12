@@ -231,12 +231,8 @@ impl<'a> System<'a> for CollisionMapUpdater {
         
         let mut view = data.view.map.lock().unwrap();
         let mut map = data.entity_map;
-        // populate collision map
-        for x in 0..map.width {
-            for y in 0..map.height {
-                view.set(x as i32, y as i32, true, true)
-            }
-        }
+
+        map.actors.reset_map();
 
         for (ent, pos) in (&data.entities, &data.positions).join() {
             let mut transparent = true;

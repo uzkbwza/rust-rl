@@ -6,7 +6,7 @@ use crate::map::EntityMap;
 use tcod::pathfinding::Dijkstra;
 use super::AiSystemData;
 
-pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pathfinder: &mut Dijkstra) -> Option<(i32, (i32, i32))> {
+pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pathfinder: &mut Dijkstra, entity_map: &EntityMap) -> Option<(i32, (i32, i32))> {
     let x = point.0;
     let y = point.1;
     pathfinder.find((x, y));
@@ -16,9 +16,11 @@ pub fn rank_distance(dest: (i32, i32), point: (i32, i32), fov_map: &TcodMap, pat
         return None
     }
 
-    // if entity_map.actors.contains_actor(x as i32, y as i32) {
-    //     return None
-    // }
+    if let Ok(point) = entity_map.actors.retrieve(x as i32, y as i32) {
+        if let Some(actor) = point {
+            return None
+        }
+    }
     Some((ranking, (x, y)))
 }
 
@@ -30,7 +32,7 @@ pub fn choose_close_point(range: i32, start: (i32, i32), dest: (i32, i32), fov_m
                 y <= 0 || x >= entity_map.width as i32 || y >= entity_map.height as i32 {
                 continue
             }
-            if let Some(ranking) = rank_distance(dest, (x, y), fov_map, pathfinder) {
+            if let Some(ranking) = rank_distance(dest, (x, y), fov_map, pathfinder, entity_map) {
                 rankings.push(ranking);
             }
         }
@@ -49,13 +51,12 @@ pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Vec<Dir> {
             
             let mut fov_map = data.view.map.lock().unwrap();
 
-            fov_map.set(pos.x, pos.y, true, true);
             fov_map.compute_fov(pos.x, pos.y, seer.fov, true, FovAlgorithm::Basic);
             let mut step_pos = (pos.x, pos.y);
 
             let mut pathfinder = Dijkstra::new_from_map(fov_map.clone(), f32::sqrt(2.0));
             pathfinder.compute_grid(step_pos);
-            let dest_point = choose_close_point(20, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
+            let dest_point = choose_close_point(3, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
 
             if pathfinder.find((dest_point.0, dest_point.1)) {
                 if let Some(_) = pathfinder.get(0) {

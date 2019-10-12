@@ -61,15 +61,26 @@ impl <'a> System<'a> for Ai {
             let mut command_event: Option<CommandEvent> = None;
 
             let mut command = Command::Move(Dir::Nowhere);
+            let mut reset_command_sequence = false;
             let ai_type = ai_unit.ai_type;
 
-            // if nothing in command sequence,
-            command_sequence = match actor.command_sequence.is_empty() {
+            // if the target's position is different than the target position stored
+            // in the AI's target component, recalculate path
+            if let Some(target) = data.targets.get(ent) {
+                if let Some(target_pos) = data.positions.get(target.entity) {
+                    if *target_pos != target.position {
+                        reset_command_sequence = true
+                    }
+                }
+            }
+
+            // if nothing in command sequence, get the command
+            command_sequence = match actor.command_sequence.is_empty() || reset_command_sequence {
                 true => { Self::get_command(ent, ai_type, &data ) },
                 false => { actor.command_sequence.clone() },
             };
 
-            println!("{:?}", &command_sequence);
+//            println!("{:?}", &command_sequence);
 
             command_event = Some(CommandEvent::new(command_sequence.pop().unwrap(), ent));
             commands.push((command_sequence, command_event));
