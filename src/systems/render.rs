@@ -1,11 +1,13 @@
 use specs::prelude::*;
 use crate::components::*;
-use crate::map::{View};
+use crate::map::{View, EntityMap};
 use vecmap::*;
 use tcod::map::FovAlgorithm;
 use tcod::console::*;
+use tcod::Map as TcodMap;
 use crate::MessageLog;
 use crate::CONFIG;
+use std::sync::MutexGuard;
 
 pub type TileMap = VecMap<Tile>;
 
@@ -89,6 +91,7 @@ impl Viewport {
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
+            let fov_map = data.view.map.lock().unwrap();
 
             let mut tile = Tile {
                 position: screen_pos,
@@ -97,8 +100,6 @@ impl Viewport {
                 fg_color,
                 bg_color,
             };
-
-            let fov_map = data.view.map.lock().unwrap();
 
             if !fov_map.is_in_fov(pos.x, pos.y) {
                 tile = Tile::new();
@@ -111,8 +112,11 @@ impl Viewport {
             } else {
                 self.seen.set_point(pos.x, pos.y, tile);
             }
-//
-//            println!("{:?}", tile);
+
+
+            if CONFIG.debug_vision {
+                tile = self.debug_process_tile(tile, &data, *pos, screen_pos, ent, fov_map)
+            }
 
             self.set_tile(tile, &mut data.tile_map);
         }
@@ -170,6 +174,37 @@ impl Viewport {
         }
         camera_position
     }
+
+    fn debug_process_tile(&self, mut tile: Tile, data: &RenderSystemData, pos: Position, screen_pos: Position, ent: Entity, fov_map: MutexGuard<TcodMap>) -> Tile {
+        let entity_map = &data.entity_map.actors;
+
+        if !fov_map.is_walkable(pos.x, pos.y) {
+            tile.bg_color = Some((255, 0, 0))
+        }
+
+        if let Ok(point) = entity_map.retrieve(pos.x, pos.y) {
+            if let Some(actor) = point {
+                let mut red = 0;
+                let mut green = 0;
+                if let Some(bg) = tile.bg_color {
+                    red = bg.0;
+                    green = bg.1;
+                }
+                tile.bg_color = Some((red, green, 255));
+            }
+        }
+
+        if let Some(my_turn) = data.my_turns.get(ent) {
+            let mut red = 0;
+            let mut blue = 0;
+            if let Some(bg) = tile.bg_color {
+                red = bg.0;
+                blue = bg.2;
+            }
+            tile.bg_color = Some((red, 255, blue));
+        }
+        tile
+    }
 }
 
 #[derive(SystemData)]
@@ -186,7 +221,10 @@ pub struct RenderSystemData<'a> {
         tile_map: WriteExpect<'a, TileMap>,
         console: WriteExpect<'a, Root>,
         message_log: WriteExpect<'a, MessageLog>,
-        // turn_queue: WriteExpect<'a, crate::TurnQueue>,
+        entity_map: ReadExpect<'a, EntityMap>,
+        my_turns: ReadStorage<'a, MyTurn>,
+
+    // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
 
 pub struct RenderViewport {
@@ -248,7 +286,7 @@ impl<'a> System<'a> for RenderViewport {
         tcod::system::set_fps(60);
         {
             let mut fov_map = data.view.map.lock().unwrap();
-            for (pos, _player) in (&data.positions, &data.players).join() {
+            for (pos, camera) in (&data.positions, &data.cameras).join() {
                 fov_map.compute_fov(pos.x, pos.y, 100, true, FovAlgorithm::Restrictive);
             }
         }

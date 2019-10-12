@@ -22,6 +22,8 @@ pub struct Config {
     pub min_turn_time: u32,
 
     pub log_turn_start: bool,
+
+    pub debug_vision: bool,
 }
 
 impl Config {
