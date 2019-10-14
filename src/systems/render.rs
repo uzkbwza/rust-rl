@@ -87,7 +87,6 @@ impl Viewport {
     // creates full character map of what the player sees.
     fn set_map(&mut self, data: &mut RenderSystemData) {
 
-        data.tile_map.reset_map();
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
