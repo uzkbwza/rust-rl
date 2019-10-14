@@ -59,7 +59,7 @@ impl Ecs {
                 root.flush();
                 if root.window_closed() || game_state.game_end { break }
             }
-            self.dispatcher.dispatch(&mut self.world);
+            self.dispatcher.dispatch_seq(&mut self.world);
         }
     }
 }

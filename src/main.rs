@@ -30,13 +30,14 @@ mod entity_factory;
 use ecs::*;
 use shrev::EventChannel;
 use tcod::input::*;
+use config::*;
 
 #[macro_use]
 extern crate lazy_static;
 
 lazy_static! {
     #[derive(Debug)]
-    static ref CONFIG: config::Config = config::Config::open();
+    static ref CONFIG: Config = Config::open();
 }
 
 fn main() {

@@ -114,9 +114,9 @@ pub fn create_test_map(world: &mut World) {
 
     create_shack(world, CONFIG.map_width/2, CONFIG.map_height/2, 7);
 
-//     for _ in 0..5 {
-//         let x: i32 = rng.gen_range(0, CONFIG.map_width);
-//         let y: i32 = rng.gen_range(0, CONFIG.map_height);
-//         create_dummy(world, x, y);
-//     }
+     for _ in 0..50 {
+         let x: i32 = rng.gen_range(0, CONFIG.map_width);
+         let y: i32 = rng.gen_range(0, CONFIG.map_height);
+         create_dummy(world, x, y);
+     }
 }
