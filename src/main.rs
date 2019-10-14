@@ -25,6 +25,7 @@ mod time;
 mod systems;
 mod ecs;
 mod bodyparts;
+mod entity_factory;
 
 use ecs::*;
 use shrev::EventChannel;

@@ -14,3 +14,5 @@ base_turn_time = 1000
 min_turn_time = 1
 
 log_turn_start = true
+
+debug_vision = false

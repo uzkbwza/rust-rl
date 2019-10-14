@@ -10,6 +10,8 @@ use tcod::console::*;
 use vecmap::*;
 use crate::systems::render::Tile;
 use crate::CONFIG;
+use crate::entity_factory::EntityBlueprint;
+use crate::components::Position;
 
 
 pub struct GameState {
@@ -116,6 +118,10 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     world.insert(root);
 
     entities::create_test_map(&mut world);
+
+    let mut blueprint = EntityBlueprint::load_with_position("creatures/base_creature".to_string(), 40, 8);
+    blueprint.build(&mut world);
+
     dispatcher.dispatch(&mut world);
 
     Ecs { world, dispatcher }

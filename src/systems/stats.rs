@@ -6,7 +6,7 @@ pub struct _StatCalculator;
 #[derive(SystemData)]
 pub struct StatsUpdaterSystemData<'a> {
     actors: WriteStorage<'a, Actor>,
-    quicknesses: WriteStorage<'a, Quickness>,
+    mobiles: WriteStorage<'a, Mobile>,
 }
 
 pub struct QuicknessSystem;
@@ -26,10 +26,10 @@ impl QuicknessSystem {
 impl<'a> System<'a> for QuicknessSystem {
     type SystemData = StatsUpdaterSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
-        for (actor, quickness) in (&data.actors, &mut data.quicknesses).join() {
+        for (actor, mobile) in (&data.actors, &mut data.mobiles).join() {
             let modifier = Self::quickness_from_agility(actor.stats.agility);
             // println!("{}", modifier);
-            quickness.modify_quickness(modifier);
+            mobile.modify_quickness(modifier);
         }
     }
 }

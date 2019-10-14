@@ -1,0 +1,34 @@
+EntityBlueprint(
+
+    name: Some((
+        name: "BaseCreature"
+    )),
+
+    actor: Some((
+        stats: (
+            strength: 10,
+            agility: 10,
+            intelligence: 10,
+        )
+    )),
+
+    renderable: Some((
+        glyph: '?',
+        fg_color: (255,255,255),
+        bg_color: None,
+        elevation: Upright
+    )),
+
+    seeing: Some((
+    )),
+
+    corporeal: Some((
+            max_hp : 10,
+            hp: 10,
+            base_damage: 1,
+    )),
+
+    mobile: Some((
+    )),
+
+)

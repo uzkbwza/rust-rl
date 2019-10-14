@@ -19,7 +19,7 @@ pub struct CombatSystemData<'a> {
     pub floors: ReadStorage<'a, Floor>,
     pub message_log: WriteExpect<'a, MessageLog>,
     pub names: ReadStorage<'a, Name>,
-    pub quicknesses: ReadStorage<'a, Quickness>,
+    pub mobiles: ReadStorage<'a, Mobile>,
     pub corporeals: WriteStorage<'a, Corporeal>,
     pub defenders: WriteStorage<'a, Defending>,
     pub invulnerables: ReadStorage<'a, Invulnerable>,
@@ -53,7 +53,7 @@ impl<'a> System<'a> for Attack {
                 }
             }
 
-            let cost = match data.quicknesses.get(ent) {
+            let cost = match data.mobiles.get(ent) {
                 Some(quickness) => Self::get_cost(quickness.quickness, 1.0),
                 None => Self::get_cost(CONFIG.base_turn_time, 1.0),
             };

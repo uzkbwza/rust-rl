@@ -144,7 +144,7 @@ pub struct MovementSystemData<'a> {
     pub view: WriteExpect<'a, View>,
     pub world_updater: Read<'a, LazyUpdate>,
     pub action_results: WriteStorage<'a, ActionResult>,
-    pub quicknesses: ReadStorage<'a, Quickness>,
+    pub mobiles: ReadStorage<'a, Mobile>,
 
     // requests
     pub move_requests: WriteStorage<'a, MoveRequest>,
@@ -174,8 +174,8 @@ impl<'a> System<'a> for Movement {
                     _ => 1.0,
                 };
 
-                let cost = match data.quicknesses.get(ent) {
-                    Some(quickness) => Self::get_cost(quickness.quickness, cost_modifier),
+                let cost = match data.mobiles.get(ent) {
+                    Some(mobile) => Self::get_cost(mobile.quickness, cost_modifier),
                     None => Self::get_cost(CONFIG.base_turn_time, cost_modifier),
                 };
 

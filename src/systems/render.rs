@@ -8,10 +8,11 @@ use tcod::Map as TcodMap;
 use crate::MessageLog;
 use crate::CONFIG;
 use std::sync::MutexGuard;
+use serde::Deserialize;
 
 pub type TileMap = VecMap<Tile>;
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Deserialize)]
 pub enum Elevation {
     Floor,
     OnFloor,

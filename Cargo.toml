@@ -23,6 +23,7 @@ vecmap = { git = "https://github.com/uzkbwza/vecmap" }
 toml = "0.5"
 serde = { version = "1", features = ["derive"] }
 lazy_static = "*"
+ron = "*"
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]

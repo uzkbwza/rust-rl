@@ -6,6 +6,7 @@ use crate::bodyparts::*;
 use crate::systems::render::Elevation;
 use crate::CONFIG;
 use crate::command::Command;
+use serde::Deserialize;
 
 pub mod flags;
 
@@ -35,9 +36,10 @@ impl Target {
     }
 }
 
-#[derive(Component, Debug, PartialEq)]
+#[derive(Component, Debug, PartialEq, Deserialize, Clone)]
 #[storage(VecStorage)]
 pub struct Name {
+    #[serde(default)]
     pub name: String
 }
 
@@ -49,19 +51,22 @@ impl Name {
     }
 }
 
-#[derive(Component, PartialEq, Debug)]
+#[derive(Component, PartialEq, Clone, Deserialize, Debug)]
 #[storage(DenseVecStorage)]
-pub struct Quickness {
+pub struct Mobile {
+    #[serde(default)]
     pub quickness: u32
 }
 
-impl Quickness {
-    pub fn new() -> Self {
-        Quickness {
+impl Default for Mobile {
+    fn default() -> Self {
+        Mobile {
             quickness: CONFIG.base_turn_time
         }
     }
+}
 
+impl Mobile {
     pub fn modify_quickness(&mut self, modifier: i32) {
         if modifier < CONFIG.base_turn_time as i32 {
             self.quickness = (CONFIG.base_turn_time as i32 - modifier) as u32;
@@ -72,32 +77,54 @@ impl Quickness {
 }
 
 #[derive(Component, Clone, PartialEq, Debug)]
-#[storage(DenseVecStorage)]
-pub struct Actor {
-    pub next_turn: u64,
-    pub stats: Stats,
-    pub command_sequence: Vec<Command>,
+pub struct CommandSequence {
+    pub commands: Vec<Command>,
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+impl Default for CommandSequence {
+    fn default() -> Self {
+        CommandSequence {
+            commands: Vec::new()
+        }
+    }
+}
+
+#[derive(Component, Clone, PartialEq, Debug, Deserialize)]
+#[storage(DenseVecStorage)]
+pub struct Actor {
+    #[serde(default)]
+    pub next_turn: u64,
+
+    #[serde(default)]
+    pub stats: Stats,
+}
+
+#[derive(PartialEq, Copy, Clone, Debug, Deserialize)]
 pub struct Stats {
     pub strength: u32,
     pub agility: u32,
     pub intelligence: u32,
 }
 
+impl Default for Stats {
+    fn default() -> Self {
+        Stats {
+        strength: 10,
+        agility: 10,
+        intelligence: 10 }
+    }
+}
+
 impl Actor {
     pub fn new() -> Self {
         let stats = Stats {
-                strength: 10,
-                agility: 10,
-                intelligence: 10 };
+                strength: 0,
+                agility: 0,
+                intelligence: 0 };
 
         Actor { 
             next_turn: 0,
-            stats,
-            command_sequence: Vec::new(),
-
+            stats
         }
     }
 
@@ -108,8 +135,7 @@ impl Actor {
                 strength,
                 agility,
                 intelligence
-            },
-            command_sequence: Vec::new(),
+            }
         }
     }
 
@@ -118,7 +144,16 @@ impl Actor {
     }
 }
 
-#[derive(Component, Debug)]
+impl Default for Actor {
+    fn default() -> Self {
+        Actor {
+            next_turn: 0,
+            stats: Stats::default(),
+        }
+    }
+}
+
+#[derive(Component, Clone, Deserialize, Debug)]
 #[storage(VecStorage)]
 // something that is destructible and physically exists
 pub struct Corporeal {
@@ -145,13 +180,13 @@ pub struct MyTurn;
 #[storage(NullStorage)]
 pub struct PlayerControl;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Clone, Deserialize)]
 #[storage(DenseVecStorage)]
 pub struct AiControl {
     pub ai_type: AiType,
 }
 
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Deserialize, Copy, Debug, PartialEq)]
 #[storage(VecStorage)]
 pub struct Position{
     pub x: i32,
@@ -164,7 +199,7 @@ impl Position {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Deserialize, Debug)]
 #[storage(VecStorage)]
 pub struct Renderable {
     pub glyph: char,
@@ -208,11 +243,23 @@ pub struct Camera;
 #[storage(NullStorage)]
 pub struct InView;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Clone, Debug, Deserialize)]
 #[storage(VecStorage)]
 pub struct Seeing {
+    #[serde(default)]
     pub fov: i32,
+
+    #[serde(default)]
     pub seen: HashMap<(i32, i32), char>,
+}
+
+impl Default for Seeing {
+    fn default() -> Self {
+        Seeing {
+            fov: 10,
+            seen: HashMap::new(),
+        }
+    }
 }
 
 impl Seeing {
@@ -228,7 +275,7 @@ impl Seeing {
 #[storage(NullStorage)]
 pub struct BlockSight;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, Clone, Deserialize)]
 #[storage(NullStorage)]
 pub struct Invulnerable;
 

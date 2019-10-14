@@ -13,7 +13,7 @@ pub fn create_player(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Invulnerable{})
         .with(Seeing::new(30))
         .with(Position::new(x,y))
-        .with(Quickness::new())
+        .with(Mobile::default())
         .with(Renderable::new('@', (255,255,255), None, Elevation::Upright))
         .with(Camera{})
         .with(Corporeal::new(10, 7))
@@ -38,7 +38,8 @@ pub fn create_dummy(world: &mut World, x: i32, y: i32) -> Entity {
 //        .with(Name::new("Dummy"))
         .with(Seeing::new(20))
         .with(Body::make_humanoid())
-        .with(Quickness::new())
+        .with(Mobile::default())
+        .with(CommandSequence::default())
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None, Elevation::Upright))
         .with(Corporeal::new(10, 1))
@@ -113,9 +114,9 @@ pub fn create_test_map(world: &mut World) {
 
     create_shack(world, CONFIG.map_width/2, CONFIG.map_height/2, 7);
 
-     for _ in 0..50 {
-         let x: i32 = rng.gen_range(0, CONFIG.map_width);
-         let y: i32 = rng.gen_range(0, CONFIG.map_height);
-         create_dummy(world, x, y);
-     }
+//     for _ in 0..5 {
+//         let x: i32 = rng.gen_range(0, CONFIG.map_width);
+//         let y: i32 = rng.gen_range(0, CONFIG.map_height);
+//         create_dummy(world, x, y);
+//     }
 }

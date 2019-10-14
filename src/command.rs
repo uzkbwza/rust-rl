@@ -1,5 +1,6 @@
 use specs::prelude::*;
 use crate::systems::movement::Dir;
+use serde::Deserialize;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Command {

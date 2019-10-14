@@ -39,6 +39,7 @@ pub struct AiSystemData<'a> {
     pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
     pub view: ReadExpect<'a, View>,
     pub actors: WriteStorage<'a, Actor>,
+    pub command_sequences: WriteStorage<'a, CommandSequence>,
 }
 
 
@@ -56,7 +57,7 @@ impl <'a> System<'a> for Ai {
         // actually sends out the command events.
         let mut commands = Vec::new();
 
-        for (ent, ai_unit, actor, _my_turn) in (&data.entities, &data.ai_units, &data.actors, &data.my_turns).join() {
+        for (ent, ai_unit, sequence, _my_turn) in (&data.entities, &data.ai_units, &data.command_sequences, &data.my_turns).join() {
             let mut command_sequence: Vec<Command> = Vec::new();
             let mut command_event: Option<CommandEvent> = None;
 
@@ -75,9 +76,9 @@ impl <'a> System<'a> for Ai {
             }
 
             // if nothing in command sequence, get the command
-            command_sequence = match actor.command_sequence.is_empty() || reset_command_sequence {
+            command_sequence = match sequence.commands.is_empty() || reset_command_sequence {
                 true => { Self::get_command(ent, ai_type, &data ) },
-                false => { actor.command_sequence.clone() },
+                false => { sequence.commands.clone() },
             };
 
 //            println!("{:?}", &command_sequence);
@@ -89,8 +90,8 @@ impl <'a> System<'a> for Ai {
 
         for (command_sequence, command_event) in commands {
             if let Some(ce) = command_event {
-                if let Some(actor) = data.actors.get_mut(ce.entity) {
-                    actor.command_sequence = command_sequence.clone();
+                if let Some(sequence) = data.command_sequences.get_mut(ce.entity) {
+                    sequence.commands = command_sequence;
                 }
                 data.command_event_channel.single_write(ce);
             }
