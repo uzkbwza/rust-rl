@@ -96,12 +96,13 @@ impl CollisionEvent {
 pub struct Movement;
 
 impl Movement {
-    fn try_move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest, view: &TcodMap) -> MoveEvent {
+    fn try_move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest, view: &TcodMap, actor_map: &ActorMap) -> MoveEvent {
         let start_x = position.x;
         let start_y = position.y;
         let mut dest_x = position.x +  move_command.dx;
         let mut dest_y = position.y + move_command.dy;
-        if !view.is_walkable(dest_x, dest_y) {
+
+        if !view.is_walkable(dest_x, dest_y) || actor_map.retrieve(dest_x, dest_y).unwrap() != None {
             dest_x = start_x;
             dest_y = start_y;
         }
@@ -165,7 +166,8 @@ impl<'a> System<'a> for Movement {
             if let Some(pos) = data.positions.get_mut(ent) {
                 // println!("got here");
 
-                let move_event = Self::try_move_position(ent, pos, move_request, &view);
+                let actor_map = &data.entity_map.actors;
+                let move_event = Self::try_move_position(ent, pos, move_request, &view, actor_map);
 
                 // diagonals cost should be more
                 let cost_modifier: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
@@ -181,8 +183,8 @@ impl<'a> System<'a> for Movement {
 
                 let (x, y) = (move_event.start_x, move_event.start_y);
                 let (dx, dy) = (move_event.dest_x, move_event.dest_y);
-                // remove collider from previous position
 
+                // remove collider from previous position
                 match data.entity_map.actors.reset_point(x, y) {
                     Ok(_) => (),
                     Err(e) => println!("{}", e)
@@ -198,7 +200,6 @@ impl<'a> System<'a> for Movement {
                 if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
                     error!("Failed to insert action result from Movement system: {}", err)
                 }
-                // println!("added actionresult", )
             }
         }
     }
@@ -228,7 +229,7 @@ impl<'a> System<'a> for CollisionMapUpdater {
 
     fn run(&mut self, data: Self::SystemData) {
         // for event in data.move_command_channel.read
-        
+
         let mut view = data.view.map.lock().unwrap();
         let mut map = data.entity_map;
 
@@ -240,13 +241,15 @@ impl<'a> System<'a> for CollisionMapUpdater {
             if let Some(_sight_blocker) = data.sight_blockers.get(ent) {
                 transparent = false;
             }
+
             if let Some(_movement_blocker) = data.movement_blockers.get(ent) {
                 walkable = false
             }
+
             if let Some(_actor) = data.actors.get(ent) {
                 match map.actors.set_point(pos.x, pos.y, Some(ent)) {
                     Ok(_) => (),
-                    Err(e) => println!("{}", e)
+                    Err(e) => println!("{}", e),
                 }
                 walkable = false;
             }

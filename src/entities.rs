@@ -39,7 +39,6 @@ pub fn create_dummy(world: &mut World, x: i32, y: i32) -> Entity {
         .with(Seeing::new(20))
         .with(Body::make_humanoid())
         .with(Mobile::default())
-        .with(CommandSequence::default())
         .with(Position::new(x,y))
         .with(Renderable::new(random_char, color, None, Elevation::Upright))
         .with(Corporeal::new(10, 1))
@@ -75,7 +74,7 @@ pub fn create_floor(world: &mut World, x: i32, y: i32) {
 pub fn create_wall(world: &mut World, x: i32, y: i32) {
     world.create_entity()
         .with(Position::new(x, y))
-        .with(Renderable::new('#', (255,255,255), Some((100,100,100,)), Elevation::Upright))
+        .with(Renderable::new('#', (255,255,255), Some((100,100,100)), Elevation::Upright))
         .with(BlockSight)
         .with(BlockMovement{})
         .with(Corporeal::new(100, 100))
@@ -114,7 +113,7 @@ pub fn create_test_map(world: &mut World) {
 
     create_shack(world, CONFIG.map_width/2, CONFIG.map_height/2, 7);
 
-     for _ in 0..50 {
+     for _ in 0..10 {
          let x: i32 = rng.gen_range(0, CONFIG.map_width);
          let y: i32 = rng.gen_range(0, CONFIG.map_height);
          create_dummy(world, x, y);

@@ -56,7 +56,7 @@ pub fn path_to_target(entity: Entity, data: &AiSystemData) -> Vec<Dir> {
 
             let mut pathfinder = Dijkstra::new_from_map(fov_map.clone(), f32::sqrt(2.0));
             pathfinder.compute_grid(step_pos);
-            let dest_point = choose_close_point(3, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
+            let dest_point = choose_close_point(2, (pos.x, pos.y), (dest.x, dest.y), &fov_map, &mut pathfinder, &data.entity_map);
 
             if pathfinder.find((dest_point.0, dest_point.1)) {
                 if let Some(_) = pathfinder.get(0) {

@@ -8,3 +8,4 @@ pub mod mapgen;
 pub mod combat;
 pub mod naming;
 pub mod stats;
+pub mod actor_setup;

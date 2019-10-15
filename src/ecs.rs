@@ -12,6 +12,7 @@ use crate::systems::render::Tile;
 use crate::CONFIG;
 use crate::entity_factory::EntityBlueprint;
 use crate::components::Position;
+use systems::render::LayeredTileMap;
 
 
 pub struct GameState {
@@ -72,17 +73,19 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     let builder = DispatcherBuilder::new()
 //         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
         .with(systems::naming::Naming, "naming_sys", &[])
+        .with(systems::actor_setup::ActorSetup, "actor_setup_sys", &[])
+        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with_barrier()
         .with(systems::input::InputListener, "input_listener_sys", &[])
-        .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
         .with(systems::ai::Ai, "ai_sys", &[])
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
 //        .with_barrier()
         .with(systems::input::Input::new(), "input_sys", &[])
         .with(systems::action::ActionHandler::new(), "action_sys", &["ai_sys"])
-        .with(systems::movement::Movement, "movement_sys", &["action_sys"])
-        .with(systems::combat::Attack, "attack_sys", &["movement_sys", "action_sys"])
+        .with(systems::movement::Movement, "movement_sys", &["action_sys", "collision_map_updater_sys"])
+        .with(systems::combat::DeathSystem, "death_sys", &[])
+        .with(systems::combat::Attack, "attack_sys", &["death_sys", "movement_sys", "action_sys"])
         .with(systems::combat::Defend, "defend_sys", &["attack_sys"])
 //        .with_barrier()
         .with(systems::time::EndTurn, "end_turn_sys", &[])
@@ -113,7 +116,7 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     world.insert(view);
     world.insert(message_log);
     world.insert(time::TurnQueue::new());
-    world.insert(VecMap::<Tile>::filled_with(Tile::new(), CONFIG.map_width, CONFIG.map_height));
+    world.insert(LayeredTileMap::new(CONFIG.map_width, CONFIG.map_height));
     world.insert(RandomNumberGenerator::new());
     world.insert(root);
 

@@ -10,6 +10,7 @@ mod pathfinding;
 use types::AiType;
 use types::monster::*;
 use thinking::Thinking;
+use crate::MessageLog;
 
 // use std::sync::{Arc, Mutex};
 
@@ -40,6 +41,7 @@ pub struct AiSystemData<'a> {
     pub view: ReadExpect<'a, View>,
     pub actors: WriteStorage<'a, Actor>,
     pub command_sequences: WriteStorage<'a, CommandSequence>,
+    pub message_log: WriteExpect<'a, MessageLog>,
 }
 
 

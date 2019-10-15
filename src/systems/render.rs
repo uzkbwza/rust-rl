@@ -20,6 +20,22 @@ pub enum Elevation {
     _InAir,
 }
 
+pub struct LayeredTileMap {
+    pub floor_tiles: TileMap,
+    pub on_floor_tiles: TileMap,
+    pub upright_tiles: TileMap,
+}
+
+impl LayeredTileMap {
+    pub fn new(width: i32, height: i32) -> Self {
+        LayeredTileMap {
+            floor_tiles: TileMap::filled_with(Tile::new(), width, height),
+            on_floor_tiles: TileMap::filled_with(Tile::new(), width, height),
+            upright_tiles: TileMap::filled_with(Tile::new(), width, height),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
     pub position: Position,
@@ -39,6 +55,7 @@ impl Tile {
             bg_color: Some((0, 0, 0))
         }
     }
+
 }
 
 struct Viewport {
@@ -49,34 +66,19 @@ struct Viewport {
 
 impl Viewport {
 
-    pub fn set_tile(&self, mut tile: Tile, tile_map: &mut TileMap) {
+    pub fn set_tile(&self, mut tile: Tile, layered_tile_map: &mut LayeredTileMap) {
         let rend_pos = tile.position;
         let (x, y) = (rend_pos.x, rend_pos.y);
 
         if x < 0 || x >= self.width { return };
         if y < 0 || y >= self.height { return };
 
-        if let Ok(existing_tile) = tile_map.retrieve(x, y) {
-
-            if tile.elevation < existing_tile.elevation {
-                tile.glyph = existing_tile.glyph;
-                tile.fg_color = existing_tile.fg_color;
-            }
-
-            if let Some(_) = existing_tile.bg_color {
-                if tile.bg_color == None {
-                    tile.bg_color = existing_tile.bg_color
-                }
-            }
-
-            else {
-                if tile.bg_color == None {
-                    tile.bg_color = Some((0, 0, 0))
-                }
-            }
-
-
-        }
+        let tile_map = match tile.elevation {
+            Elevation::Floor => &mut layered_tile_map.floor_tiles,
+            Elevation::OnFloor => &mut layered_tile_map.on_floor_tiles,
+            Elevation::Upright => &mut layered_tile_map.upright_tiles,
+            _ => unimplemented!(),
+        };
 
         match tile_map.set_point(x, y, tile) {
             Ok(_) => (),
@@ -118,7 +120,7 @@ impl Viewport {
                 tile = self.debug_process_tile(tile, &data, *pos, screen_pos, ent, fov_map)
             }
 
-            self.set_tile(tile, &mut data.tile_map);
+            self.set_tile(tile, &mut data.layered_tile_map);
         }
     }
 
@@ -218,11 +220,13 @@ pub struct RenderSystemData<'a> {
         on_floors:    ReadStorage<'a, OnFloor>,
         game_state: ReadExpect<'a, crate::GameState>,
         view: ReadExpect<'a, View>,
-        tile_map: WriteExpect<'a, TileMap>,
+        layered_tile_map: WriteExpect<'a, LayeredTileMap>,
         console: WriteExpect<'a, Root>,
         message_log: WriteExpect<'a, MessageLog>,
         entity_map: ReadExpect<'a, EntityMap>,
         my_turns: ReadStorage<'a, MyTurn>,
+        names: ReadStorage<'a, Name>,
+
 
     // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
@@ -244,7 +248,7 @@ impl RenderViewport {
         }
     }
 
-    pub fn render(console: &mut Root, tile_map: &TileMap) {
+    pub fn render(console: &mut Root, tile_map: &mut TileMap) {
         for tile in tile_map.items.iter() {
             Self::render_char(console, *tile);
         }
@@ -256,11 +260,16 @@ impl RenderViewport {
         if tile.position.y < 0 || tile.position.y >= console.height() { return };
 
 //        println!("{:?}", tile);
+        let mut bg_color = console.get_char_background(tile.position.x, tile.position.y);
+
         let (fg_r, fg_g, fg_b) = tile.fg_color;
-        let (bg_r, bg_g, bg_b) = tile.bg_color.expect("Tile does not have background value!");
+        if let Some((r, g, b)) = tile.bg_color {
+            bg_color.r = r;
+            bg_color.g = g;
+            bg_color.b = b;
+        }
 
         let fg_color = tcod::colors::Color{ r: fg_r, g: fg_g, b: fg_b };
-        let bg_color = tcod::colors::Color{ r: bg_r, g: bg_g, b: bg_b };
 
         console.put_char_ex(
             tile.position.x + CONFIG.viewport_x,
@@ -269,7 +278,6 @@ impl RenderViewport {
             fg_color,
             bg_color
         );
-
     }
 }
 
@@ -283,7 +291,15 @@ impl<'a> System<'a> for RenderViewport {
             return
         }
 
+        {
+            let mut layered_tile_map = &mut data.layered_tile_map;
+            layered_tile_map.floor_tiles.reset_map();
+            layered_tile_map.on_floor_tiles.reset_map();
+            layered_tile_map.upright_tiles.reset_map();
+        }
+
         tcod::system::set_fps(60);
+
         {
             let mut fov_map = data.view.map.lock().unwrap();
             for (pos, camera) in (&data.positions, &data.cameras).join() {
@@ -291,15 +307,19 @@ impl<'a> System<'a> for RenderViewport {
             }
         }
 
-        let mut viewport = self.viewport.as_mut().unwrap();
-        viewport.set_map(&mut data);
+        {
+            let mut viewport = self.viewport.as_mut().unwrap();
+            viewport.set_map(&mut data);
+        }
 
-        let tile_map = &data.tile_map;
+
         let console = &mut data.console;
 
         console.clear();
-        Self::render(console, tile_map);
-
+        let mut layered_tile_map = &mut data.layered_tile_map;
+        Self::render(console, &mut layered_tile_map.floor_tiles);
+        Self::render(console, &mut layered_tile_map.on_floor_tiles);
+        Self::render(console, &mut layered_tile_map.upright_tiles);
     }
 }
 

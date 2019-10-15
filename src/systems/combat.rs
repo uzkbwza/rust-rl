@@ -5,25 +5,37 @@ use crate::systems::movement::Dir;
 use crate::ecs::MessageLog;
 use crate::components::flags::*;
 use crate::CONFIG;
+use crate::systems::render::Elevation;
+use crate::map::*;
 
 pub struct Attack;
 
+// TODO: refactor the shit out of this
 #[derive(SystemData)]
 pub struct CombatSystemData<'a> {
     pub entities: Entities<'a>,
-    pub actors: ReadStorage<'a, Actor>,
+    pub actors: WriteStorage<'a, Actor>,
     pub attack_requests: WriteStorage<'a, AttackRequest>,
     pub action_results: WriteStorage<'a, ActionResult>,
     pub world_updater: Read<'a, LazyUpdate>,
     pub positions: ReadStorage<'a, Position>,
     pub floors: ReadStorage<'a, Floor>,
     pub message_log: WriteExpect<'a, MessageLog>,
-    pub names: ReadStorage<'a, Name>,
+    pub names: WriteStorage<'a, Name>,
     pub mobiles: ReadStorage<'a, Mobile>,
     pub corporeals: WriteStorage<'a, Corporeal>,
     pub defenders: WriteStorage<'a, Defending>,
     pub invulnerables: ReadStorage<'a, Invulnerable>,
     pub bodies: WriteStorage<'a, Body>,
+    pub deaths: WriteStorage<'a, Death>,
+    pub corpses: WriteStorage<'a, Corpse>,
+    pub entity_map: WriteExpect<'a, EntityMap>,
+    pub renderables: WriteStorage<'a, Renderable>,
+    pub move_requests: WriteStorage<'a, MoveRequest>,
+    pub ai_units: WriteStorage<'a, AiControl>,
+    pub view: WriteExpect<'a, View>,
+    pub players: ReadStorage<'a, PlayerControl>,
+
 }
 
 impl Attack {
@@ -66,8 +78,6 @@ impl<'a> System<'a> for Attack {
 }
 
 pub struct Defend;
-
-
 impl<'a> System<'a> for Defend {
     type SystemData = CombatSystemData<'a>;
 
@@ -86,8 +96,17 @@ impl<'a> System<'a> for Defend {
                     corporeal.hp -= dmg;
                     data.message_log.log(format!("{} hits {} for {} damage!!", attacker_name, name.name, dmg));
                     if corporeal.hp <= 0 {
-                        data.message_log.log(format!("{} dies!!!", name.name));
-                        data.entities.delete(ent);
+                        data.message_log.log(format!("{} is vanquished!!!", name.name));
+                        match data.bodies.get(ent) {
+                            Some(_) => {
+                                corporeal.hp = corporeal.max_hp;
+                                data.deaths.insert(ent, Death{});
+                            },
+                            None => {
+                                data.entities.delete(ent);
+                            }
+                        }
+
                     }
                 },
 
@@ -95,6 +114,40 @@ impl<'a> System<'a> for Defend {
                     data.message_log.log(String::from("It's as if the attack is deflected by a divine force!"));
                 }
             }
+        }
+    }
+}
+
+pub struct DeathSystem;
+impl<'a> System<'a> for DeathSystem {
+    type SystemData = CombatSystemData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        for (death, ent) in (&data.deaths, &data.entities).join() {
+            data.corpses.insert(ent, Corpse{});
+            data.world_updater.remove::<Death>(ent);
+            if let Some(name) = data.names.get_mut(ent) {
+                name.name = format!("corpse of {}", {&name.name});
+            }
+
+            data.actors.remove(ent);
+            if let Some(renderable) = data.renderables.get_mut(ent) {
+                renderable.fg_color = (100, 100, 100);
+                renderable.bg_color = Some((60,0,0));
+                renderable.elevation = Elevation::OnFloor;
+            }
+
+            if let Some(pos) = data.positions.get(ent) {
+                let mut view = data.view.map.lock().unwrap();
+                data.entity_map.actors.set_point(pos.x, pos.y, None);
+                view.set(pos.x, pos.y, true, true);
+            }
+
+            data.move_requests.remove(ent);
+            data.attack_requests.remove(ent);
+            data.action_results.remove(ent);
+            data.ai_units.remove(ent);
+
         }
     }
 }

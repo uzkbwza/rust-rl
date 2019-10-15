@@ -273,6 +273,14 @@ impl Seeing {
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
+pub struct Death;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Corpse;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
 pub struct BlockSight;
 
 #[derive(Component, Default, Debug, Clone, Deserialize)]

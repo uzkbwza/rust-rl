@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::CONFIG;
 use vecmap::*;
 
-type ActorMap = VecMap<Option<Entity>>;
+pub type ActorMap = VecMap<Option<Entity>>;
 
 #[derive(Debug)]
 pub struct EntityMap {
