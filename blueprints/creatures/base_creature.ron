@@ -14,14 +14,10 @@
     )),
 
     renderable: Some((
-        glyph: 'O',
+        glyph: '!',
         fg_color: (255,255,255),
         bg_color: None,
         elevation: Upright
-    )),
-
-    ai_control: Some((
-        ai_type: Monster
     )),
 
     seeing: Some((

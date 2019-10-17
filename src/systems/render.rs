@@ -105,7 +105,21 @@ impl Viewport {
             };
 
             if !fov_map.is_in_fov(pos.x, pos.y) {
-                continue
+                tile = Tile::new();
+                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
+                    tile = t;
+                    tile.position = screen_pos;
+                    tile.bg_color = Some((10, 15, 8));
+                    tile.fg_color = (15, 20, 14);
+                } else { return }
+            } else {
+                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
+                    if t.elevation < tile.elevation {
+                        self.seen.set_point(pos.x, pos.y, tile);
+                    }
+                } else {
+                    self.seen.set_point(pos.x, pos.y, tile);
+                }
             }
 
             if CONFIG.debug_vision {
@@ -276,8 +290,8 @@ impl<'a> System<'a> for RenderViewport {
     fn run(&mut self, mut data: Self::SystemData) {
 
         if !data.game_state.player_turn {
-//            tcod::system::set_fps(0);
-//            return
+            tcod::system::set_fps(0);
+            return
         }
 
         {

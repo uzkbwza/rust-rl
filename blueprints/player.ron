@@ -16,6 +16,4 @@
 
     camera: Some(()),
     player: Some(()),
-
-    ai_control: None,
 )

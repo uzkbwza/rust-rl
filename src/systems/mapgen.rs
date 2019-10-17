@@ -11,17 +11,13 @@ use crate::entity_factory::{EntityLoadQueue, EntityBlueprint};
 use rand::distributions::{Standard, Alphanumeric};
 
 pub struct MapGen {
-    initialized: bool,
-    player_placed: bool,
-    level: Option<Level>
+    initialized: bool
 }
 
 impl MapGen {
     pub fn new() -> Self {
         MapGen {
-            initialized: false,
-            player_placed: false,
-            level: None
+            initialized: false
         }
     }
 }
@@ -30,70 +26,52 @@ impl MapGen {
 pub struct MapGenSystemData<'a> {
     entities: Entities<'a>,
     world_updater: Read<'a, LazyUpdate>,
-    entity_load_queue: WriteExpect<'a, EntityLoadQueue>,
-    players: WriteStorage<'a, PlayerControl>,
-    positions: WriteStorage<'a, Position>
+    entity_load_queue: WriteExpect<'a, EntityLoadQueue>
 }
 
 impl<'a> System<'a> for MapGen {
     type SystemData = MapGenSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let mut rng = thread_rng();
+        if self.initialized { return }
         let seed: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(30)
             .collect();
 
-        match self.level {
-            None => {
-                let mut bsp_level = BspLevel::create(CONFIG.map_width, CONFIG.map_height, &seed);
-                self.level = Some(bsp_level);
-            },
-            _ => (),
-        }
+        println!{"{}", seed};
 
-        let level =  self.level.as_ref().unwrap();
+        let mut bsp_level = BspLevel::create(CONFIG.map_width, CONFIG.map_height, &seed);
+        let mut player_placed = false;
+        let mut dummy_placed = false;
+        let mut rng = thread_rng();
 
-        if !self.initialized {
-            let mut dummy_placed = false;
-            for (i, tile) in level.tile_map.items.iter().enumerate() {
-                let (x, y) = level.tile_map.idx_xy(i);
-                let blueprint = EntityBlueprint::load_and_place("terrain/base_floor".to_string(), x, y);
-                data.entity_load_queue.push(blueprint);
+        for (i, tile) in bsp_level.tile_map.items.iter().enumerate() {
+            let (x, y) = bsp_level.tile_map.idx_xy(i);
+            let blueprint = EntityBlueprint::load_and_place("terrain/base_floor".to_string(), x, y);
+            data.entity_load_queue.push(blueprint);
 
+            match *tile {
+                TileType::Wall => {
+                    let blueprint = EntityBlueprint::load_and_place("terrain/base_wall".to_string(), x, y);
+                    data.entity_load_queue.push(blueprint);
+                },
+                _ => (),
+            }
+
+            if !player_placed && rng.gen_bool(0.005) {
                 match *tile {
-                    TileType::Wall => {
-                        let blueprint = EntityBlueprint::load_and_place("terrain/base_wall".to_string(), x, y);
-                        data.entity_load_queue.push(blueprint);
-                    },
                     TileType::Floor => {
-                        if rng.gen_bool(0.02) {
-                            let blueprint = EntityBlueprint::load_and_place("creatures/base_creature".to_string(), x, y);
-                            data.entity_load_queue.push(blueprint);
-                        }
+                        let mut player = EntityBlueprint::load_and_place("player".to_string(), x, y);
+                        data.entity_load_queue.push(player);
+                        player_placed = true;
                     },
                     _ => (),
+
                 }
             }
-            self.initialized = true;
         }
 
-        for (player, pos) in (&data.players, &mut data.positions).join() {
-            if !self.player_placed && rng.gen_bool(0.5) {
-                for (i, tile) in level.tile_map.items.iter().enumerate() {
-                    let (x, y) = level.tile_map.idx_xy(i);
-                    match *tile {
-                        TileType::Floor => {
-                            pos.x = x;
-                            pos.y = y;
-                            self.player_placed = true
-                        },
-                        _ => (),
-                    }
-                }
-
-            }
-        }
+        self.initialized = true;
     }
 }
