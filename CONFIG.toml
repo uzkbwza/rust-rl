@@ -15,4 +15,4 @@ min_turn_time = 1
 
 log_turn_start = true
 
-debug_vision = false
+debug_vision = true

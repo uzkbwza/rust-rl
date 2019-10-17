@@ -91,8 +91,3 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
         }
     }
 }
-
-pub fn create_test_map(world: &mut World) {
-//    let player = create_player(world, CONFIG.map_width/2, CONFIG.map_height/2);
-
-}

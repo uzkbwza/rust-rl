@@ -83,7 +83,7 @@ impl <'a> System<'a> for Ai {
                 false => { sequence.commands.clone() },
             };
 
-//            println!("{:?}", &command_sequence);
+            println!("{:?}", &command_sequence);
 
             command_event = Some(CommandEvent::new(command_sequence.pop().unwrap(), ent));
             commands.push((command_sequence, command_event));

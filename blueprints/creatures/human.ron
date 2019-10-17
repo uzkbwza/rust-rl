@@ -1,5 +1,3 @@
 (
     extends: Some("creatures/base_creature")
-
-    
 )
