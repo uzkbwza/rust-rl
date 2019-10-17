@@ -918,7 +918,6 @@ dependencies = [
 [[package]]
 name = "mapgen"
 version = "0.1.0"
-source = "git+https://github.com/uzkbwza/mapgen#master#43366c17a4380c13673c5470b580372ca730ba6a"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1585,7 +1584,7 @@ dependencies = [
  "env_logger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "mapgen 0.1.0 (git+https://github.com/uzkbwza/mapgen#master)",
+ "mapgen 0.1.0",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rltk 0.4.4 (git+https://github.com/thebracket/rltk_rs)",
  "ron 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1598,7 +1597,7 @@ dependencies = [
  "specs-derive 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tcod 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "vecmap 0.1.0 (git+https://github.com/uzkbwza/vecmap#master)",
+ "vecmap 0.1.0",
 ]
 
 [[package]]
@@ -2059,6 +2058,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "vecmap"
 version = "0.1.0"
 source = "git+https://github.com/uzkbwza/vecmap#master#b8aee1bee6de52782a5a5877404f944a2106cdca"
+
+[[package]]
+name = "vecmap"
+version = "0.1.0"
 
 [[package]]
 name = "version_check"
@@ -2531,7 +2534,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
 "checksum lzw 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
 "checksum malloc_buf 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
-"checksum mapgen 0.1.0 (git+https://github.com/uzkbwza/mapgen#master)" = "<none>"
 "checksum maybe-uninit 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 "checksum memchr 2.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "88579771288728879b57485cc7d6b07d648c9f0141eb955f8ab7f9d45394468e"
 "checksum memmap 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e2ffa2c986de11a9df78620c01eeaaf27d94d3ff02bf81bfcca953102dd0c6ff"

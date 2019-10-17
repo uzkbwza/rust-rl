@@ -19,8 +19,8 @@ log = "0.4.8"
 env_logger = "0.7.0"
 doryen-rs = "1.1.0"
 rltk = { git = "https://github.com/thebracket/rltk_rs" }
-vecmap = { git = "https://github.com/uzkbwza/vecmap#master" }
-mapgen = { git = "https://github.com/uzkbwza/mapgen#master" }
+vecmap = { path = "vecmap" }
+mapgen = { path = "https://github.com/uzkbwza/mapgen#master" }
 toml = "0.5"
 serde = { version = "1", features = ["derive"] }
 lazy_static = "*"
