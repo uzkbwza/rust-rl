@@ -28,5 +28,22 @@ impl EntityMap {
 // use for pathfinding, fov, etc. essentially just a wrapper for tcod's map
 // currently not actually used for anything...
 pub struct View {
-    pub map: Arc<Mutex<TcodMap>>
+    pub map: Arc<Mutex<TcodMap>>,
+    pub block_map: VecMap<BlockTile>
+}
+
+
+#[derive(Clone, Copy)]
+pub struct BlockTile {
+    pub blocks_movement: bool,
+    pub blocks_sight: bool,
+}
+
+impl Default for BlockTile {
+    fn default() -> Self {
+        BlockTile {
+            blocks_movement: false,
+            blocks_sight: false,
+        }
+    }
 }

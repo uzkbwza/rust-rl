@@ -10,7 +10,7 @@ use tcod::console::*;
 use vecmap::*;
 use crate::systems::render::Tile;
 use crate::CONFIG;
-use crate::entity_factory::EntityBlueprint;
+use crate::entity_factory::{EntityBlueprint, EntityLoadQueue};
 use crate::components::Position;
 use systems::render::LayeredTileMap;
 
@@ -54,24 +54,44 @@ impl Ecs {
     pub fn main_loop(&mut self) {
         loop {
             self.world.maintain();
+            let mut blueprints : Vec<EntityBlueprint> = Vec::new();
+            self.build_blueprints(&mut blueprints);
             {
                 let game_state = self.world.read_resource::<GameState>();
                 let mut root = self.world.write_resource::<Root>();
                 root.flush();
                 if root.window_closed() || game_state.game_end { break }
             }
-            self.dispatcher.dispatch_seq(&mut self.world);
+            self.dispatcher.dispatch(&mut self.world);
+        }
+    }
+
+    pub fn build_blueprints(&mut self, blueprints: &mut Vec<EntityBlueprint>) {
+        {
+            let mut blueprint_queue = self.world.write_resource::<EntityLoadQueue>();
+            if blueprint_queue.is_empty() { return }
+            println!("{}",blueprint_queue.len());
+            for _ in 0..blueprint_queue.len() {
+                let blueprint = blueprint_queue.pop().unwrap();
+                blueprints.push(blueprint);
+            }
+        }
+
+        {
+            for blueprint in blueprints {
+                blueprint.build(&mut self.world);
+            }
         }
     }
 }
 
 //pub struct
-
 pub fn world_setup<'a, 'b> () -> Ecs {
 //    println!("{:?}", CONFIG);
     let mut world = World::new();
     let builder = DispatcherBuilder::new()
-//         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
+        .with(systems::render::RandomRender, "random_render_sys", &[])
+        .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
         .with(systems::naming::Naming, "naming_sys", &[])
         .with(systems::actor_setup::ActorSetup, "actor_setup_sys", &[])
         .with(systems::movement::CollisionMapUpdater::new(), "collision_map_updater_sys", &[])
@@ -103,7 +123,10 @@ pub fn world_setup<'a, 'b> () -> Ecs {
         world_time,
     };
 
-    let view = map::View { map: Arc::new(Mutex::new(TcodMap::new(CONFIG.map_width, CONFIG.map_height))) };
+    let view = map::View {
+        map: Arc::new(Mutex::new(TcodMap::new(CONFIG.map_width, CONFIG.map_height))),
+        block_map: VecMap::filled_with(map::BlockTile::default(), CONFIG.map_width, CONFIG.map_height)
+    };
     let map = map::EntityMap::new(CONFIG.map_width as usize, CONFIG.map_height as usize);
     let message_log = MessageLog::new();
     let root = Root::initializer()
@@ -119,10 +142,10 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     world.insert(LayeredTileMap::new(CONFIG.map_width, CONFIG.map_height));
     world.insert(RandomNumberGenerator::new());
     world.insert(root);
+    world.insert(EntityLoadQueue::new());
 
     entities::create_test_map(&mut world);
-
-    let mut blueprint = EntityBlueprint::load_with_position("creatures/base_creature".to_string(), 40, 8);
+    let mut blueprint = EntityBlueprint::load_and_place("creatures/base_creature".to_string(), 40, 8);
     blueprint.build(&mut world);
 
     dispatcher.dispatch(&mut world);

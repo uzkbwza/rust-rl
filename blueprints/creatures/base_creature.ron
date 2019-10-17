@@ -1,4 +1,5 @@
-EntityBlueprint(
+(
+    extends: Some("base_object"),
 
     name: Some((
         name: "BaseCreature"
@@ -13,19 +14,13 @@ EntityBlueprint(
     )),
 
     renderable: Some((
-        glyph: '?',
+        glyph: '!',
         fg_color: (255,255,255),
         bg_color: None,
         elevation: Upright
     )),
 
     seeing: Some((
-    )),
-
-    corporeal: Some((
-            max_hp : 10,
-            hp: 10,
-            base_damage: 1,
     )),
 
     mobile: Some((

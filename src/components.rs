@@ -176,7 +176,7 @@ impl Corporeal {
 #[storage(NullStorage)]
 pub struct MyTurn;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Deserialize, Clone, Debug)]
 #[storage(NullStorage)]
 pub struct PlayerControl;
 
@@ -199,6 +199,8 @@ impl Position {
     }
 }
 
+
+// TODO: separate elevation into its own component type
 #[derive(Component, Clone, Deserialize, Debug)]
 #[storage(VecStorage)]
 pub struct Renderable {
@@ -212,6 +214,15 @@ impl Renderable {
     pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>, elevation: Elevation) -> Self {
         Renderable { glyph, fg_color, bg_color, elevation }
     }
+}
+
+#[derive(Component, Clone, Deserialize, Debug)]
+#[storage(VecStorage)]
+pub struct RandomRenderable {
+    pub glyphs: String,
+    pub fg_colors: Vec<(u8, u8, u8)>,
+    pub bg_colors: Option<Vec<(u8, u8, u8)>>,
+    pub elevation: Elevation,
 }
 
 #[derive(Component)]
@@ -235,7 +246,7 @@ pub struct Floor;
 #[storage(NullStorage)]
 pub struct OnFloor;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Deserialize, Clone, Debug)]
 #[storage(NullStorage)]
 pub struct Camera;
 
@@ -279,7 +290,7 @@ pub struct Death;
 #[storage(NullStorage)]
 pub struct Corpse;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, Clone, Deserialize)]
 #[storage(NullStorage)]
 pub struct BlockSight;
 
@@ -287,7 +298,7 @@ pub struct BlockSight;
 #[storage(NullStorage)]
 pub struct Invulnerable;
 
-#[derive(Component, Default, Debug)]
+#[derive(Component, Default, Debug, Clone, Deserialize)]
 #[storage(NullStorage)]
 pub struct BlockMovement;
 

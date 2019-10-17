@@ -9,6 +9,7 @@ use crate::MessageLog;
 use crate::CONFIG;
 use std::sync::MutexGuard;
 use serde::Deserialize;
+use rand::prelude::*;
 
 pub type TileMap = VecMap<Tile>;
 
@@ -108,13 +109,18 @@ impl Viewport {
                 if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
                     tile = t;
                     tile.position = screen_pos;
-                    tile.bg_color = Some((6, 8, 5));
-                    tile.fg_color = (10, 15, 8);
+                    tile.bg_color = Some((10, 15, 8));
+                    tile.fg_color = (15, 20, 14);
                 } else { return }
             } else {
-                self.seen.set_point(pos.x, pos.y, tile);
+                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
+                    if t.elevation < tile.elevation {
+                        self.seen.set_point(pos.x, pos.y, tile);
+                    }
+                } else {
+                    self.seen.set_point(pos.x, pos.y, tile);
+                }
             }
-
 
             if CONFIG.debug_vision {
                 tile = self.debug_process_tile(tile, &data, *pos, screen_pos, ent, fov_map)
@@ -226,9 +232,6 @@ pub struct RenderSystemData<'a> {
         entity_map: ReadExpect<'a, EntityMap>,
         my_turns: ReadStorage<'a, MyTurn>,
         names: ReadStorage<'a, Name>,
-
-
-    // turn_queue: WriteExpect<'a, crate::TurnQueue>,
 }
 
 pub struct RenderViewport {
@@ -336,5 +339,48 @@ impl<'a> System<'a> for RenderUi {
             formatted_message = format!("{}\n{}", message, formatted_message);
         }
         console.print_rect(0,CONFIG.viewport_height, CONFIG.screen_width, message_log_height as i32, formatted_message);
+    }
+}
+
+#[derive(SystemData)]
+pub struct RandomRenderSystemData<'a> {
+    entities: Entities<'a>,
+    renderables: WriteStorage<'a, Renderable>,
+    random_renderables: WriteStorage<'a, RandomRenderable>,
+    world_updater: Read<'a, LazyUpdate>,
+}
+
+pub struct RandomRender;
+impl<'a> System<'a> for RandomRender {
+    type SystemData = RandomRenderSystemData<'a>;
+    fn run(&mut self, mut data: Self::SystemData) {
+        let mut rng = rand::thread_rng();
+        for (random_renderable, ent) in (&mut data.random_renderables, &data.entities).join() {
+            let glyph = random_renderable.glyphs
+                .chars()
+                .choose(&mut rng)
+                .unwrap();
+
+            let fg_color = random_renderable.fg_colors.choose(&mut rng).unwrap().clone();
+            let mut bg_color = None;
+            if let Some(colors) = &random_renderable.bg_colors {
+                bg_color = Some(colors.choose(&mut rng).unwrap().clone());
+            }
+
+            if let Some(renderable) = data.renderables.get_mut(ent) {
+                renderable.glyph = glyph;
+                renderable.fg_color = fg_color;
+                renderable.bg_color = bg_color;
+            } else {
+                let new_renderable = Renderable {
+                    glyph,
+                    fg_color,
+                    bg_color,
+                    elevation: random_renderable.elevation,
+                };
+                data.renderables.insert(ent, new_renderable);
+            }
+            data.world_updater.remove::<RandomRenderable>(ent);
+        }
     }
 }

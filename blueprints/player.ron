@@ -1,0 +1,19 @@
+(
+    extends: Some("creatures/human"),
+
+    name: Some((
+        name: "Player"
+    )),
+
+    invulnerable: Some(()),
+
+    renderable: Some((
+        glyph: '@', 
+        fg_color: (255,255,255), 
+        bg_color: None, 
+        elevation: Upright
+    )),
+
+    camera: Some(()),
+    player: Some(()),
+)

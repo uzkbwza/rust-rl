@@ -11,6 +11,12 @@ extern crate toml;
 extern crate log;
 extern crate env_logger;
 extern crate vecmap;
+extern crate mapgen;
+
+
+#[macro_use]
+extern crate arrayref;
+extern crate sha2;
 
 use specs::prelude::*;
 use std::env;

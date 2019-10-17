@@ -227,23 +227,24 @@ pub struct CollisionMapUpdaterSystemData<'a> {
 impl<'a> System<'a> for CollisionMapUpdater {
     type SystemData = CollisionMapUpdaterSystemData<'a>;
 
-    fn run(&mut self, data: Self::SystemData) {
+    fn run(&mut self, mut data: Self::SystemData) {
         // for event in data.move_command_channel.read
 
-        let mut view = data.view.map.lock().unwrap();
+        let mut view = data.view;
         let mut map = data.entity_map;
 
         map.actors.reset_map();
+        view.block_map.reset_map();
 
         for (ent, pos) in (&data.entities, &data.positions).join() {
-            let mut transparent = true;
-            let mut walkable = true;
+            let id = view.block_map.xy_idx(pos.x, pos.y);
+
             if let Some(_sight_blocker) = data.sight_blockers.get(ent) {
-                transparent = false;
+                view.block_map.items[id].blocks_sight = true
             }
 
             if let Some(_movement_blocker) = data.movement_blockers.get(ent) {
-                walkable = false
+                view.block_map.items[id].blocks_movement = true
             }
 
             if let Some(_actor) = data.actors.get(ent) {
@@ -251,9 +252,15 @@ impl<'a> System<'a> for CollisionMapUpdater {
                     Ok(_) => (),
                     Err(e) => println!("{}", e),
                 }
-                walkable = false;
+                view.block_map.items[id].blocks_movement = true
             }
-            view.set(pos.x, pos.y, transparent, walkable);
+        }
+
+        for i in 0..view.block_map.items.len() {
+            let (x, y) = view.block_map.idx_xy(i);
+            let transparent = !view.block_map.items[i].blocks_sight;
+            let walkable = !view.block_map.items[i].blocks_movement;
+            view.map.lock().unwrap().set(x, y, transparent, walkable);
         }
     }
 }

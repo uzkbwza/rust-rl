@@ -93,29 +93,6 @@ pub fn create_shack(world: &mut World, center_x: i32, center_y: i32, size: i32) 
 }
 
 pub fn create_test_map(world: &mut World) {
-    let mut rng = rand::thread_rng();
-    let player = create_player(world, CONFIG.map_width/2, CONFIG.map_height/2);
+//    let player = create_player(world, CONFIG.map_width/2, CONFIG.map_height/2);
 
-    for x in 0..CONFIG.map_width {
-        for y in 0..CONFIG.map_height {
-            create_floor(world, x, y);
-        }
-    }
-
-    for y in 0..CONFIG.map_height {
-        create_wall(world, CONFIG.map_width - 1, y);
-        create_wall(world, 0, y);
-    }
-    for x in 0..CONFIG.map_width {
-        create_wall(world, x, 0);
-        create_wall(world, x, CONFIG.map_height - 1);
-    }
-
-    create_shack(world, CONFIG.map_width/2, CONFIG.map_height/2, 7);
-
-     for _ in 0..10 {
-         let x: i32 = rng.gen_range(0, CONFIG.map_width);
-         let y: i32 = rng.gen_range(0, CONFIG.map_height);
-         create_dummy(world, x, y);
-     }
 }

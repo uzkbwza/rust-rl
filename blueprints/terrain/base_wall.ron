@@ -1,0 +1,21 @@
+(
+    name: Some((
+        name: "BaseWall"
+    )),
+
+    renderable: Some((
+        glyph: '#',
+        fg_color: (255,255,255),
+        bg_color: Some((100,100,100)),
+        elevation: Upright
+    )),
+
+    corporeal: Some((
+        max_hp: 100,
+        hp: 100,
+        base_damage: 10
+    )),
+
+    blocks_movement: Some(()),
+    blocks_sight: Some(()),
+)

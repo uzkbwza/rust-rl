@@ -13,17 +13,20 @@ specs-derive = "0.4.0"
 shred = "0.9.3"
 shred-derive = "0.6.1"
 shrev = "1.1.1"
-rand = "0.7.2"
+rand = "*"
 array2d = "0.2.1"
 log = "0.4.8"
 env_logger = "0.7.0"
 doryen-rs = "1.1.0"
 rltk = { git = "https://github.com/thebracket/rltk_rs" }
-vecmap = { git = "https://github.com/uzkbwza/vecmap" }
+vecmap = { git = "https://github.com/uzkbwza/vecmap#master" }
+mapgen = { git = "https://github.com/uzkbwza/mapgen#master" }
 toml = "0.5"
 serde = { version = "1", features = ["derive"] }
 lazy_static = "*"
 ron = "*"
+arrayref = "*"
+sha2 = "*"
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]
