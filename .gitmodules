@@ -1,0 +1,6 @@
+[submodule "mapgen"]
+	path = mapgen
+	url = https://github.com/uzkbwza/mapgen
+[submodule "vecmap"]
+	path = vecmap
+	url = https://github.com/uzkbwza/vecmap

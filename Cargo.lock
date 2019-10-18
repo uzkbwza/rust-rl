@@ -923,7 +923,7 @@ dependencies = [
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tcod 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "vecmap 0.1.0",
+ "vecmap 0.1.0 (git+https://github.com/uzkbwza/vecmap#master)",
 ]
 
 [[package]]
@@ -2057,6 +2057,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "vecmap"
 version = "0.1.0"
+source = "git+https://github.com/uzkbwza/vecmap#master#b8aee1bee6de52782a5a5877404f944a2106cdca"
+
+[[package]]
+name = "vecmap"
+version = "0.1.0"
 
 [[package]]
 name = "version_check"
@@ -2653,6 +2658,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum unicode-segmentation 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1967f4cdfc355b37fd76d2a954fb2ed3871034eb4f26d60537d88795cfc332a9"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 "checksum unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
+"checksum vecmap 0.1.0 (git+https://github.com/uzkbwza/vecmap#master)" = "<none>"
 "checksum version_check 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "914b1a6776c4c929a602fafd8bc742e06365d4bcbe48c30f9cca5824f70dc9dd"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum walkdir 2.2.9 (registry+https://github.com/rust-lang/crates.io-index)" = "9658c94fa8b940eab2250bd5a457f9c48b748420d71293b165c8cdbe2f55f71e"
