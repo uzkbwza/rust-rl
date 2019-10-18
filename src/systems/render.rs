@@ -87,7 +87,7 @@ impl Viewport {
         }
     }
 
-    // creates full character map of what the player sees.
+    // creates full character map of what the player sees and has seen.
     fn set_map(&mut self, data: &mut RenderSystemData) {
 
         let camera_pos = self.get_camera_position(data);
@@ -104,17 +104,33 @@ impl Viewport {
                 bg_color,
             };
 
-            if !fov_map.is_in_fov(pos.x, pos.y) && data.actors.get(ent) == None {
+            // if position isn't in view...
+            if !fov_map.is_in_fov(pos.x, pos.y) {
+
+                // reset tile
                 tile = Tile::new();
+
+                // check if that position has been seen before,
+                // if it has, set our tile to whatever was there, but color it darker.
                 if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
                     tile = t;
                     tile.position = screen_pos;
-                    tile.bg_color = Some((10, 15, 8));
-                    tile.fg_color = (15, 20, 14);
+                    tile.bg_color = Some((10, 10, 10));
+                    tile.fg_color = (30, 30, 30);
                 } else { return }
-            } else {
-                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
-                    if t.elevation < tile.elevation {
+            }
+
+            // if we CAN see the position...
+            else {
+                // if there is already a tile we have seen in that spot...
+                if let Ok(seen_tile) = self.seen.retrieve(pos.x, pos.y) {
+
+                    // if that tile should render below or at the same height as whatever is there
+                    // now, and what is there now IS NOT an actor (we don't need to save seen
+                    // positions of AI's that move around a lot)...
+                    if tile.elevation >= seen_tile.elevation && data.actors.get(ent) == None {
+
+                        // change that seen tile to whatever inhabits its position.
                         self.seen.set_point(pos.x, pos.y, tile);
                     }
                 } else {
