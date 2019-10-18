@@ -42,6 +42,7 @@ impl<'a> System<'a> for MapGen {
         println!{"{}", seed};
 
         let mut bsp_level = BspLevel::create(CONFIG.map_width, CONFIG.map_height, &seed);
+        println!("{}", bsp_level);
         let mut player_placed = false;
         let mut dummy_placed = false;
         let mut rng = thread_rng();
@@ -59,7 +60,7 @@ impl<'a> System<'a> for MapGen {
                 _ => (),
             }
 
-            if !player_placed && rng.gen_bool(0.005) {
+            if !player_placed {
                 match *tile {
                     TileType::Floor => {
                         let mut player = EntityBlueprint::load_and_place("player".to_string(), x, y);

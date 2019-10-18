@@ -92,9 +92,9 @@ impl Viewport {
 
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
+            let fov_map = data.view.map.lock().unwrap();
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
-            let fov_map = data.view.map.lock().unwrap();
 
             let mut tile = Tile {
                 position: screen_pos,
@@ -104,7 +104,7 @@ impl Viewport {
                 bg_color,
             };
 
-            if !fov_map.is_in_fov(pos.x, pos.y) {
+            if !fov_map.is_in_fov(pos.x, pos.y) && data.actors.get(ent) == None {
                 tile = Tile::new();
                 if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
                     tile = t;
@@ -217,21 +217,22 @@ impl Viewport {
 
 #[derive(SystemData)]
 pub struct RenderSystemData<'a> {
-        entities: Entities<'a>,
-        renderables: ReadStorage<'a, Renderable>,
-        positions: ReadStorage<'a, Position>,
-        players: ReadStorage<'a, PlayerControl>,
-        cameras: ReadStorage<'a, Camera>,
-        floors:    ReadStorage<'a, Floor>,
-        on_floors:    ReadStorage<'a, OnFloor>,
-        game_state: ReadExpect<'a, crate::GameState>,
-        view: ReadExpect<'a, View>,
-        layered_tile_map: WriteExpect<'a, LayeredTileMap>,
-        console: WriteExpect<'a, Root>,
-        message_log: WriteExpect<'a, MessageLog>,
-        entity_map: ReadExpect<'a, EntityMap>,
-        my_turns: ReadStorage<'a, MyTurn>,
-        names: ReadStorage<'a, Name>,
+    entities: Entities<'a>,
+    renderables: ReadStorage<'a, Renderable>,
+    positions: ReadStorage<'a, Position>,
+    players: ReadStorage<'a, PlayerControl>,
+    cameras: ReadStorage<'a, Camera>,
+    floors:    ReadStorage<'a, Floor>,
+    on_floors:    ReadStorage<'a, OnFloor>,
+    game_state: ReadExpect<'a, crate::GameState>,
+    view: ReadExpect<'a, View>,
+    layered_tile_map: WriteExpect<'a, LayeredTileMap>,
+    console: WriteExpect<'a, Root>,
+    message_log: WriteExpect<'a, MessageLog>,
+    entity_map: ReadExpect<'a, EntityMap>,
+    my_turns: ReadStorage<'a, MyTurn>,
+    names: ReadStorage<'a, Name>,
+    actors: ReadStorage<'a, Actor>,
 }
 
 pub struct RenderViewport {
