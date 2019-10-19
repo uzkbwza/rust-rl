@@ -109,33 +109,33 @@ impl Viewport {
 
                 // reset tile
                 tile = Tile::new();
-
-                // check if that position has been seen before,
-                // if it has, set our tile to whatever was there, but color it darker.
-                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
-                    tile = t;
-                    tile.position = screen_pos;
-                    tile.bg_color = Some((10, 10, 10));
-                    tile.fg_color = (30, 30, 30);
-                } else { return }
-            }
-
-            // if we CAN see the position...
-            else {
-                // if there is already a tile we have seen in that spot...
-                if let Ok(seen_tile) = self.seen.retrieve(pos.x, pos.y) {
-
-                    // if that tile should render below or at the same height as whatever is there
-                    // now, and what is there now IS NOT an actor (we don't need to save seen
-                    // positions of AI's that move around a lot)...
-                    if tile.elevation >= seen_tile.elevation && data.actors.get(ent) == None {
-
-                        // change that seen tile to whatever inhabits its position.
-                        self.seen.set_point(pos.x, pos.y, tile);
-                    }
-                } else {
-                    self.seen.set_point(pos.x, pos.y, tile);
-                }
+//
+//                // check if that position has been seen before,
+//                // if it has, set our tile to whatever was there, but color it darker.
+//                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
+//                    tile = t;
+//                    tile.position = screen_pos;
+//                    tile.bg_color = Some((10, 10, 10));
+//                    tile.fg_color = (30, 30, 30);
+//                } else { return }
+//            }
+//
+//            // if we CAN see the position...
+//            else {
+//                // if there is already a tile we have seen in that spot...
+//                if let Ok(seen_tile) = self.seen.retrieve(pos.x, pos.y) {
+//
+//                    // if that tile should render below or at the same height as whatever is there
+//                    // now, and what is there now IS NOT an actor (we don't need to save seen
+//                    // positions of AI's that move around a lot)...
+//                    if tile.elevation >= seen_tile.elevation && data.actors.get(ent) == None {
+//
+//                        // change that seen tile to whatever inhabits its position.
+//                        self.seen.set_point(pos.x, pos.y, tile);
+//                    }
+//                } else {
+//                    self.seen.set_point(pos.x, pos.y, tile);
+//                }
             }
 
             if CONFIG.debug_vision {
@@ -143,6 +143,36 @@ impl Viewport {
             }
 
             self.set_tile(tile, &mut data.layered_tile_map);
+        }
+    }
+
+    fn set_seen(&mut self, data: &mut RenderSystemData) {
+        let camera_pos = self.get_camera_position(data);
+        let fov_map = data.view.map.lock().unwrap();
+
+        for x in 0..CONFIG.map_width {
+            for y in 0..CONFIG.map_height {
+                let pos = Position::new(x, y);
+                let screen_pos = self.get_screen_coordinates(pos, camera_pos);
+
+                if fov_map.is_in_fov(x, y) {
+
+                    let color = match fov_map.is_walkable(x, y) {
+                        true => (5, 5, 10),
+                        false => (9, 9, 16)
+                    };
+
+                    let mut tile = Tile::new();
+                    tile.bg_color = Some(color);
+                    tile.position = pos;
+                    self.seen.set_point(x, y, tile);
+                } else {
+                    if let Ok(mut tile) = self.seen.retrieve(x, y) {
+                        tile.position = screen_pos;
+                        self.set_tile(tile, &mut data.layered_tile_map);
+                    }
+                }
+            }
         }
     }
 
@@ -329,6 +359,7 @@ impl<'a> System<'a> for RenderViewport {
 
         {
             let mut viewport = self.viewport.as_mut().unwrap();
+            viewport.set_seen(&mut data);
             viewport.set_map(&mut data);
         }
 
