@@ -27,6 +27,8 @@ lazy_static = "*"
 ron = "*"
 arrayref = "*"
 sha2 = "*"
+walkdir = "*"
+
 
 [features]
 default = ["specs/nightly", "specs/specs-derive"]

@@ -10,7 +10,7 @@ use tcod::console::*;
 use vecmap::*;
 use crate::systems::render::Tile;
 use crate::CONFIG;
-use crate::entity_factory::{EntityBlueprint, EntityLoadQueue};
+use crate::entity_factory::{EntityBlueprint, EntityLoadQueue, EntityFactory};
 use crate::components::Position;
 use systems::render::LayeredTileMap;
 
@@ -37,7 +37,7 @@ impl MessageLog {
         self.messages.insert(0, string);
     }
 
-    pub fn _pop(&mut self) -> Option<String> {
+    pub fn pop(&mut self) -> Option<String> {
         match self.messages.len() {
             0 => None,
             _ => Some(self.messages.remove(0))
@@ -52,10 +52,11 @@ pub struct Ecs {
 
 impl Ecs {
     pub fn main_loop(&mut self) {
+        let mut factory = EntityFactory::new("blueprints/");
         loop {
             self.world.maintain();
             let mut blueprints : Vec<EntityBlueprint> = Vec::new();
-            self.build_blueprints(&mut blueprints);
+            self.build_blueprints(&mut blueprints, &mut factory);
             {
                 let game_state = self.world.read_resource::<GameState>();
                 let mut root = self.world.write_resource::<Root>();
@@ -66,22 +67,18 @@ impl Ecs {
         }
     }
 
-    pub fn build_blueprints(&mut self, blueprints: &mut Vec<EntityBlueprint>) {
-        {
-            let mut blueprint_queue = self.world.write_resource::<EntityLoadQueue>();
-            if blueprint_queue.is_empty() { return }
-            println!("{}",blueprint_queue.len());
-            for _ in 0..blueprint_queue.len() {
-                let blueprint = blueprint_queue.pop().unwrap();
-                blueprints.push(blueprint);
-            }
+    pub fn build_blueprints(&mut self, blueprints: &mut Vec<EntityBlueprint>, factory: &mut EntityFactory) {
+        let mut blueprint_queue = &mut self.world.write_resource::<EntityLoadQueue>().clone();
+
+        if blueprint_queue.is_empty() { return }
+        println!("{}",blueprint_queue.len());
+        for _ in 0..blueprint_queue.len() {
+            let blueprint = blueprint_queue.pop().unwrap();
+            factory.build(blueprint.0, &mut self.world, blueprint.1);
         }
 
-        {
-            for blueprint in blueprints {
-                blueprint.build(&mut self.world);
-            }
-        }
+        self.world.write_resource::<EntityLoadQueue>().clear();
+
     }
 }
 

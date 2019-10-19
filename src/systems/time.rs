@@ -30,6 +30,8 @@ impl<'a> System<'a> for TurnAllocator {
                 data.turn_queue.push(actor_next_turn);
             }
 
+            if data.turn_queue.is_empty() { return }
+
             let next_turn = data.turn_queue.peek().unwrap().tick;
 
             // loop through all "next turns" that store the same tick, making sure all actors who are ready

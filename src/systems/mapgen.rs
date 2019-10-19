@@ -49,13 +49,11 @@ impl<'a> System<'a> for MapGen {
 
         for (i, tile) in bsp_level.tile_map.items.iter().enumerate() {
             let (x, y) = bsp_level.tile_map.idx_xy(i);
-            let blueprint = EntityBlueprint::load_and_place("terrain/base_floor".to_string(), x, y);
-            data.entity_load_queue.push(blueprint);
+            data.entity_load_queue.push(("terrain/base_floor".to_string(), Some(Position::new(x,y))));
 
             match *tile {
                 TileType::Wall => {
-                    let blueprint = EntityBlueprint::load_and_place("terrain/base_wall".to_string(), x, y);
-                    data.entity_load_queue.push(blueprint);
+                    data.entity_load_queue.push(("terrain/base_wall".to_string(), Some(Position::new(x,y))));
                 },
                 _ => (),
             }
@@ -63,8 +61,7 @@ impl<'a> System<'a> for MapGen {
             if !player_placed {
                 match *tile {
                     TileType::Floor => {
-                        let mut player = EntityBlueprint::load_and_place("player".to_string(), x, y);
-                        data.entity_load_queue.push(player);
+                        data.entity_load_queue.push(("player".to_string(), Some(Position::new(x,y))));
                         player_placed = true;
                     },
                     _ => (),
