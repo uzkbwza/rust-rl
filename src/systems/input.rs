@@ -108,6 +108,10 @@ impl<'a> System<'a> for Input {
                             },
                         );
 
+                        if dest.0 as usize > data.entity_map.width && dest.1 as usize > data.entity_map.height {
+                            continue
+                        }
+
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
 
                             // attack enemy instead if closeby
