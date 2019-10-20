@@ -11,7 +11,7 @@ use std::sync::MutexGuard;
 use serde::Deserialize;
 use rand::prelude::*;
 
-pub type TileMap = VecMap<Tile>;
+pub type TileMap = VecMap<Option<Tile>>;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Deserialize)]
 pub enum Elevation {
@@ -30,9 +30,9 @@ pub struct LayeredTileMap {
 impl LayeredTileMap {
     pub fn new(width: i32, height: i32) -> Self {
         LayeredTileMap {
-            floor_tiles: TileMap::filled_with(Tile::new(), width, height),
-            on_floor_tiles: TileMap::filled_with(Tile::new(), width, height),
-            upright_tiles: TileMap::filled_with(Tile::new(), width, height),
+            floor_tiles: TileMap::filled_with(None, width, height),
+            on_floor_tiles: TileMap::filled_with(None, width, height),
+            upright_tiles: TileMap::filled_with(None, width, height),
         }
     }
 }
@@ -81,7 +81,7 @@ impl Viewport {
             _ => unimplemented!(),
         };
 
-        match tile_map.set_point(x, y, tile) {
+        match tile_map.set_point(x, y, Some(tile)) {
             Ok(_) => (),
             Err(e) => println!("{}", e)
         }
@@ -96,6 +96,10 @@ impl Viewport {
             let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
 
+            if !fov_map.is_in_fov(pos.x, pos.y) {
+                continue
+            }
+
             let mut tile = Tile {
                 position: screen_pos,
                 elevation: renderable.elevation,
@@ -104,39 +108,6 @@ impl Viewport {
                 bg_color,
             };
 
-            // if position isn't in view...
-            if !fov_map.is_in_fov(pos.x, pos.y) {
-
-                // reset tile
-                tile = Tile::new();
-//
-//                // check if that position has been seen before,
-//                // if it has, set our tile to whatever was there, but color it darker.
-//                if let Ok(t) = self.seen.retrieve(pos.x, pos.y) {
-//                    tile = t;
-//                    tile.position = screen_pos;
-//                    tile.bg_color = Some((10, 10, 10));
-//                    tile.fg_color = (30, 30, 30);
-//                } else { return }
-//            }
-//
-//            // if we CAN see the position...
-//            else {
-//                // if there is already a tile we have seen in that spot...
-//                if let Ok(seen_tile) = self.seen.retrieve(pos.x, pos.y) {
-//
-//                    // if that tile should render below or at the same height as whatever is there
-//                    // now, and what is there now IS NOT an actor (we don't need to save seen
-//                    // positions of AI's that move around a lot)...
-//                    if tile.elevation >= seen_tile.elevation && data.actors.get(ent) == None {
-//
-//                        // change that seen tile to whatever inhabits its position.
-//                        self.seen.set_point(pos.x, pos.y, tile);
-//                    }
-//                } else {
-//                    self.seen.set_point(pos.x, pos.y, tile);
-//                }
-            }
 
             if CONFIG.debug_vision {
                 tile = self.debug_process_tile(tile, &data, *pos, screen_pos, ent, fov_map)
@@ -146,6 +117,7 @@ impl Viewport {
         }
     }
 
+    // TODO: maybe put this back in the Seeing component? or Actor? idk.
     fn set_seen(&mut self, data: &mut RenderSystemData) {
         let camera_pos = self.get_camera_position(data);
         let fov_map = data.view.map.lock().unwrap();
@@ -165,11 +137,13 @@ impl Viewport {
                     let mut tile = Tile::new();
                     tile.bg_color = Some(color);
                     tile.position = pos;
-                    self.seen.set_point(x, y, tile);
+                    self.seen.set_point(x, y, Some(tile));
                 } else {
                     if let Ok(mut tile) = self.seen.retrieve(x, y) {
-                        tile.position = screen_pos;
-                        self.set_tile(tile, &mut data.layered_tile_map);
+                        if let Some(mut tile) = tile {
+                            tile.position = screen_pos;
+                            self.set_tile(tile, &mut data.layered_tile_map);
+                        }
                     }
                 }
             }
@@ -290,7 +264,7 @@ impl RenderViewport {
         let viewport = Some(Viewport {
             width: CONFIG.viewport_width,
             height: CONFIG.viewport_height,
-            seen: TileMap::filled_with(Tile::new(), CONFIG.map_width, CONFIG.map_height)
+            seen: TileMap::filled_with(None, CONFIG.map_width, CONFIG.map_height)
         });
         
         RenderViewport {
@@ -300,7 +274,11 @@ impl RenderViewport {
 
     pub fn render(console: &mut Root, tile_map: &mut TileMap) {
         for tile in tile_map.items.iter() {
-            Self::render_char(console, *tile);
+            if let Some(tile) = tile {
+                if tile.glyph != ' ' || tile.bg_color != None {
+                    Self::render_char(console, *tile);
+                }
+            }
         }
     }
 
@@ -365,7 +343,6 @@ impl<'a> System<'a> for RenderViewport {
 
 
         let console = &mut data.console;
-
         console.clear();
         let mut layered_tile_map = &mut data.layered_tile_map;
         Self::render(console, &mut layered_tile_map.floor_tiles);
