@@ -108,7 +108,7 @@ impl<'a> System<'a> for Input {
                             },
                         );
 
-                        if dest.0 as usize > data.entity_map.width && dest.1 as usize > data.entity_map.height {
+                        if dest.0 as usize >= data.entity_map.width || dest.1 as usize >= data.entity_map.height || dest.0 < 0 || dest.1 < 0 {
                             continue
                         }
 
