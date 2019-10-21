@@ -63,7 +63,7 @@ impl Ecs {
                 root.flush();
                 if root.window_closed() || game_state.game_end { break }
             }
-            self.dispatcher.dispatch(&mut self.world);
+            self.dispatcher.dispatch_seq(&mut self.world);
         }
     }
 
@@ -71,7 +71,7 @@ impl Ecs {
         let mut blueprint_queue = &mut self.world.write_resource::<EntityLoadQueue>().clone();
 
         if blueprint_queue.is_empty() { return }
-        println!("{}",blueprint_queue.len());
+        println!("# of blueprints to build: {}",blueprint_queue.len());
         for _ in 0..blueprint_queue.len() {
             let blueprint = blueprint_queue.pop().unwrap();
             factory.build(blueprint.0, &mut self.world, blueprint.1);
@@ -98,7 +98,7 @@ pub fn world_setup<'a, 'b> () -> Ecs {
         .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
         .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
 //        .with_barrier()
-        .with(systems::input::Input::new(), "input_sys", &[])
+        .with(systems::input::Input::new(), "input_sys", &["input_listener_sys"])
         .with(systems::action::ActionHandler::new(), "action_sys", &["ai_sys"])
         .with(systems::movement::Movement, "movement_sys", &["action_sys", "collision_map_updater_sys"])
         .with(systems::combat::DeathSystem, "death_sys", &[])

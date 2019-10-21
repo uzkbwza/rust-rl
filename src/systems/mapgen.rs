@@ -39,7 +39,7 @@ impl<'a> System<'a> for MapGen {
             .take(30)
             .collect();
 
-        println!{"{}", seed};
+        println!{"Seed: {}", seed};
 
         let mut bsp_level = BspLevel::create(CONFIG.map_width, CONFIG.map_height, &seed);
         println!("{}", bsp_level);

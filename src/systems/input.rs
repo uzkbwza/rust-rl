@@ -68,6 +68,7 @@ impl<'a> System<'a> for Input {
 
     fn run(&mut self, mut data: Self::SystemData) {
 
+        match self.key_reader { None => return, _ => () }
         let keys = data.key_channel.read(self.key_reader.as_mut().unwrap());
         for key in keys {
             if self.command_queue.len() < 3 {
@@ -78,7 +79,7 @@ impl<'a> System<'a> for Input {
         }
 
         if self.command_queue.is_empty() { return }
-        println!("{:?}", self.command_queue);
+//        println!("{:?}", self.command_queue);
         let command = self.command_queue.pop();
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
@@ -108,8 +109,14 @@ impl<'a> System<'a> for Input {
                             },
                         );
 
-                        if dest.0 as usize > data.entity_map.width && dest.1 as usize > data.entity_map.height {
-                            continue
+//                        println!("{}, {}", dest.0, dest.1);
+
+                        if (dest.0 as usize) >= data.entity_map.width
+                            || (dest.1 as usize) >= data.entity_map.height
+                            || (dest.0 as usize) < 0
+                            || (dest.1 as usize) < 0 {
+
+                            return
                         }
 
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
