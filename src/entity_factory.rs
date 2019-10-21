@@ -1,7 +1,8 @@
 use specs::prelude::*;
 use crate::components::*;
 use serde::Deserialize;
-use std::fs::File;
+use std::fs::{File, read_dir};
+use std::fs;
 use std::fs::FileType;
 use std::io::prelude::*;
 use std::io::Read;
@@ -9,6 +10,7 @@ use specs::Builder;
 use ron::de::from_reader;
 use std::collections::HashMap;
 use walkdir::WalkDir;
+use std::path::PathBuf;
 
 pub type EntityLoadQueue = Vec<(String, Option<Position>)>;
 
@@ -22,32 +24,20 @@ pub struct EntityFactory {
 }
 
 impl EntityFactory {
-    pub fn new(blueprints_path: &str) -> Self {
+    pub fn new(path: &str) -> Self {
+        let mut factory = EntityFactory {
+            blueprints: HashMap::new()
+        };
 
-        let mut map = HashMap::new();
+        let path = PathBuf::from(path);
 
-        for entry in WalkDir::new(blueprints_path) {
-            let entry = entry.unwrap();
-            if entry.metadata().unwrap().is_file() {
-                let mut path = String::from(entry.path().to_str().unwrap());
-                let start = blueprints_path.len();
-                let end = path.len() - 4;
-                path.truncate(end);
-                path = path.split_off(start);
-
-                println!("Adding blueprint {}", path.clone());
-                map.insert(path.clone(), EntityBlueprint::load(path));
-            }
-        }
-
-        EntityFactory {
-            blueprints: map
-        }
+        factory.build_map(&path);
+        factory
     }
 
     pub fn build(&mut self, name: String, world: &mut World, pos: Option<Position>) -> Option<Entity> {
         if !self.blueprints.contains_key(&name) {
-            println!("Could not build blueprint: {}", &name);
+//            println!("Could not build blueprint: {}", &name);
             return None
         }
 
@@ -56,7 +46,61 @@ impl EntityFactory {
         let entity = blueprint.build(world);
         Some(entity)
     }
+
+    fn build_map(&mut self, path: &PathBuf) {
+        let entries = get_blueprints(path);
+        for entry in entries {
+            let blueprint = EntityBlueprint::load(entry.clone());
+            self.blueprints.insert(entry, blueprint);
+        }
+    }
 }
+
+
+fn get_blueprints(path_buf: &PathBuf) -> Vec<String> {
+//    println!("{:?}", path);
+    let mut path_names = Vec::new();
+    for entry in fs::read_dir(path_buf)
+        .expect(&format!("Problem reading path: {:?}", path_buf))
+        {
+            if let Ok(entry) = entry {
+                let ref path = entry.path();
+                let metadata = entry
+                    .metadata()
+                    .expect(&format!("Problem reading file metadata: {:?}", path));
+
+                if metadata.is_dir() {
+                    path_names.extend(get_blueprints(path))
+                }
+
+                else if metadata.is_file() {
+                    let formatted_path_name = format_path_name(path);
+//                    println!("{}", &formatted_path_name);
+                    path_names.push(formatted_path_name);
+                }
+            }
+        }
+    path_names
+}
+
+fn format_path_name(path: &PathBuf) -> String {
+    let mut path_name = String::new();
+    for ancestor in path.ancestors() {
+        match ancestor.file_stem() {
+            Some(ancestor_name) => {
+                if path_name.is_empty() {
+                    path_name = String::from(ancestor_name.to_string_lossy());
+                } else {
+                    path_name = format!("{}.{}", ancestor_name.to_string_lossy(), path_name);
+                }
+            },
+            None => (),
+        }
+    }
+    println!("{:?}", path_name);
+    path_name
+}
+
 
 #[macro_export]
 macro_rules! make_entity_blueprint_template {

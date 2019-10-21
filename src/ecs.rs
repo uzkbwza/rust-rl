@@ -52,7 +52,7 @@ pub struct Ecs {
 
 impl Ecs {
     pub fn main_loop(&mut self) {
-        let mut factory = EntityFactory::new("blueprints/");
+        let mut factory = EntityFactory::new("blueprints");
         loop {
             self.world.maintain();
             let mut blueprints : Vec<EntityBlueprint> = Vec::new();
