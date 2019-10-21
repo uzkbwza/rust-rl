@@ -1,5 +1,5 @@
 (
-    extends: Some("creatures/base_creature")
+    extends: Some("creatures.base_creature")
 
     
 )

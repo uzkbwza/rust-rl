@@ -7,7 +7,7 @@ use crate::CONFIG;
 use crate::mapgen::bsp::*;
 use crate::mapgen::level::*;
 use crate::components::*;
-use crate::entity_factory::{EntityLoadQueue, EntityBlueprint};
+use crate::entity_factory::{EntityLoadQueue};
 use rand::distributions::{Standard, Alphanumeric};
 
 pub struct MapGen {
@@ -49,11 +49,11 @@ impl<'a> System<'a> for MapGen {
 
         for (i, tile) in bsp_level.tile_map.items.iter().enumerate() {
             let (x, y) = bsp_level.tile_map.idx_xy(i);
-            data.entity_load_queue.push(("terrain/base_floor".to_string(), Some(Position::new(x,y))));
+            data.entity_load_queue.push(("terrain.base_floor".to_string(), Some(Position::new(x,y))));
 
             match *tile {
                 TileType::Wall => {
-                    data.entity_load_queue.push(("terrain/base_wall".to_string(), Some(Position::new(x,y))));
+                    data.entity_load_queue.push(("terrain.base_wall".to_string(), Some(Position::new(x,y))));
                 },
                 _ => (),
             }

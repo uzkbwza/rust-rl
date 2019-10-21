@@ -10,56 +10,83 @@ use specs::Builder;
 use ron::de::from_reader;
 use std::collections::HashMap;
 use walkdir::WalkDir;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub type EntityLoadQueue = Vec<(String, Option<Position>)>;
 
-// TODO: deserialize all entity blueprints on startup so i can just instantiate them later (see comments)
-// probably add an "entity factory" that contains a hashmap of all filenames
-// (like "creatures/base_creature") to a copyable blueprint instance
-// and takes in the entity load queue
+#[derive(Debug, Clone)]
+struct BlueprintStorage {
+    pub blueprint: Option<EntityBlueprint>,
+    pub path: PathBuf,
+}
+
 
 pub struct EntityFactory {
-    blueprints: HashMap<String, EntityBlueprint>,
+    blueprints: HashMap<String, BlueprintStorage>,
 }
+
 
 impl EntityFactory {
     pub fn new(path: &str) -> Self {
         let mut factory = EntityFactory {
             blueprints: HashMap::new()
         };
-
         let path = PathBuf::from(path);
-
         factory.build_map(&path);
         factory
     }
 
     pub fn build(&mut self, name: String, world: &mut World, pos: Option<Position>) -> Option<Entity> {
         if !self.blueprints.contains_key(&name) {
-//            println!("Could not build blueprint: {}", &name);
+            //            println!("Could not build blueprint: {}", &name);
             return None
         }
 
-        let mut blueprint = self.blueprints.get_mut(&name).unwrap();
-        blueprint.position = pos;
-        let entity = blueprint.build(world);
-        Some(entity)
+        let mut blueprint_entry = self.blueprints.get_mut(&name);
+        if let Some(mut blueprint_storage) = blueprint_entry {
+            if let Some(blueprint) = &blueprint_storage.blueprint {
+                let mut blueprint = blueprint.clone();
+                blueprint.position = pos;
+//                println!{"BUILDING: {:?}", &name}
+                let entity = blueprint.build(world);
+                return Some(entity)
+            }
+        }
+        None
     }
 
     fn build_map(&mut self, path: &PathBuf) {
-        let entries = get_blueprints(path);
-        for entry in entries {
-            let blueprint = EntityBlueprint::load(entry.clone());
-            self.blueprints.insert(entry, blueprint);
+        let file_paths = get_blueprint_paths(path);
+        let mut names = Vec::new();
+
+        // make empty map of blueprints
+        for ref entry in file_paths {
+            let name = format_path_name(entry).split_off((path.to_string_lossy().len() + 1)); // remove topmost parent name from formatted name (e.g. "blueprints.")
+            names.push(name.clone());
+            let storage = BlueprintStorage {
+                blueprint: None,
+                path: entry.clone(),
+            };
+
+            self.blueprints.insert(name, storage);
+        }
+
+        for name in names {
+            let mut storage = self.blueprints.get_mut(&name);
+            if let Some(storage) = storage {
+                let mut storage = storage.clone();
+                let blueprint = self.load(name.clone());
+                storage.blueprint = Some(blueprint.clone());
+                self.blueprints.insert(name, storage);
+            }
         }
     }
 }
 
 
-fn get_blueprints(path_buf: &PathBuf) -> Vec<String> {
+fn get_blueprint_paths(path_buf: &PathBuf) -> Vec<PathBuf> {
 //    println!("{:?}", path);
-    let mut path_names = Vec::new();
+    let mut paths = Vec::new();
     for entry in fs::read_dir(path_buf)
         .expect(&format!("Problem reading path: {:?}", path_buf))
         {
@@ -70,17 +97,16 @@ fn get_blueprints(path_buf: &PathBuf) -> Vec<String> {
                     .expect(&format!("Problem reading file metadata: {:?}", path));
 
                 if metadata.is_dir() {
-                    path_names.extend(get_blueprints(path))
+                    paths.extend(get_blueprint_paths(path))
                 }
 
                 else if metadata.is_file() {
-                    let formatted_path_name = format_path_name(path);
 //                    println!("{}", &formatted_path_name);
-                    path_names.push(formatted_path_name);
+                    paths.push(path.clone());
                 }
             }
         }
-    path_names
+    paths
 }
 
 fn format_path_name(path: &PathBuf) -> String {
@@ -90,24 +116,22 @@ fn format_path_name(path: &PathBuf) -> String {
             Some(ancestor_name) => {
                 if path_name.is_empty() {
                     path_name = String::from(ancestor_name.to_string_lossy());
-                } else {
+                } else if ancestor.parent() != None {
                     path_name = format!("{}.{}", ancestor_name.to_string_lossy(), path_name);
                 }
             },
             None => (),
         }
     }
-    println!("{:?}", path_name);
+    println!("REGISTERING NAME: {:?}", path_name);
     path_name
 }
-
 
 #[macro_export]
 macro_rules! make_entity_blueprint_template {
     {
         $($compname:ident: $comptype:ty,)+
     } => {
-
         #[derive(Clone, Debug, Deserialize, Default)]
         pub struct EntityBlueprint {
             pub extends: Option<String>,
@@ -118,31 +142,13 @@ macro_rules! make_entity_blueprint_template {
         }
 
         impl EntityBlueprint {
-            pub fn load(filename: String) -> Self {
-                let filename = format!("blueprints/{}.ron", filename);
-                let mut file = File::open(&filename)
-                    .expect(&format!("blueprint file not found: {}", filename));
+            pub fn load(path: &PathBuf) -> Self {
+                let mut file = File::open(path)
+                    .expect(&format!("blueprint file not found: {:?}", path));
 
-                let mut blueprint: Self = from_reader(file).expect(&format!("could not create blueprint: {}", filename));
+                let mut blueprint: Self = from_reader(file).expect(&format!("could not create blueprint: {:?}", path));
 
                 // recursively apply parent blueprints
-                if let Some(path) = blueprint.extends {
-                    println!("^ EXTENDS: {}", path.clone());
-                    let mut base =  Self::load(path);
-                    $(
-                        if let Some(c) = blueprint.$compname {
-                            base.$compname = Some(c);
-                        };
-                    )+
-                    return base
-                }
-                blueprint
-            }
-
-            pub fn load_and_place (filename: String, x: i32, y: i32) -> Self {
-                let mut blueprint = Self::load(filename);
-                let position = Position::new(x, y);
-                blueprint.position = Some(position);
                 blueprint
             }
 
@@ -156,8 +162,31 @@ macro_rules! make_entity_blueprint_template {
                 builder.build()
             }
         }
+
+        impl EntityFactory {
+            fn load(&mut self, name: String) -> EntityBlueprint {
+                let ref path = self.blueprints.get(&name).unwrap().path;
+                let mut file = File::open(path)
+                    .expect(&format!("blueprint file not found: {:?}", path));
+                let mut blueprint: EntityBlueprint = from_reader(file).expect(&format!("could not create blueprint: {:?}", path));
+                println!("LOADING: {:?}", path);
+                // recursively apply child blueprints on top of parent
+                if let Some(name) = blueprint.extends {
+                    println!("^ EXTENDS: {:?}", name);
+                    let mut parent =  self.load(name);
+                    $(
+                        if let Some(c) = blueprint.$compname {
+                        parent.$compname = Some(c);
+                    };
+                    )+
+                    return parent
+                }
+                blueprint
+            }
+        }
     }
 }
+
 
 make_entity_blueprint_template! {
     name: Name,

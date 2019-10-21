@@ -142,8 +142,6 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     world.insert(EntityLoadQueue::new());
 
     entities::create_test_map(&mut world);
-    let mut blueprint = EntityBlueprint::load_and_place("creatures/base_creature".to_string(), 40, 8);
-    blueprint.build(&mut world);
 
     dispatcher.dispatch(&mut world);
 

@@ -1,5 +1,5 @@
 (
-    extends: Some("creatures/human"),
+    extends: Some("creatures.human"),
 
     name: Some((
         name: "Player"
