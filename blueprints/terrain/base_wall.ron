@@ -3,16 +3,16 @@
         name: "BaseWall"
     )),
 
-    renderable: Some((
-        glyph: '#',
-        fg_color: (255,255,255),
-        bg_color: Some((100,100,100)),
-        elevation: Upright
+    random_renderable: Some((
+        glyphs: "MN",
+        fg_colors: [(140, 120, 120)],
+        bg_colors: Some([(90, 70, 80),(90, 80, 70),(90, 80, 90)]),
+        elevation: Upright,
     )),
 
     corporeal: Some((
-        max_hp: 100,
-        hp: 100,
+        max_hp: 10,
+        hp: 10,
         base_damage: 10
     )),
 
