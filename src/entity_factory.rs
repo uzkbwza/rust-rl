@@ -187,7 +187,6 @@ macro_rules! make_entity_blueprint_template {
     }
 }
 
-
 make_entity_blueprint_template! {
     name: Name,
     actor: Actor,

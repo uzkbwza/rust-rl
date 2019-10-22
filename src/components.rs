@@ -162,16 +162,6 @@ pub struct Corporeal {
     pub base_damage: i32,
 }
 
-impl Corporeal {
-    pub fn new(max_hp: i32, base_damage: i32) -> Self {
-        Corporeal {
-            max_hp,
-            hp: max_hp,
-            base_damage,
-        }
-    }
-}
-
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
 pub struct MyTurn;

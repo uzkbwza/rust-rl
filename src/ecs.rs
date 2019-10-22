@@ -2,7 +2,6 @@ use specs::prelude::*;
 use crate::time;
 use crate::map;
 use crate::systems;
-use crate::entities;
 use rltk::RandomNumberGenerator;
 use std::sync::{Arc, Mutex};
 use tcod::map::Map as TcodMap;
@@ -140,8 +139,6 @@ pub fn world_setup<'a, 'b> () -> Ecs {
     world.insert(RandomNumberGenerator::new());
     world.insert(root);
     world.insert(EntityLoadQueue::new());
-
-    entities::create_test_map(&mut world);
 
     dispatcher.dispatch(&mut world);
 

@@ -23,7 +23,6 @@ use std::env;
 use tcod::console::*;
 
 mod config;
-mod entities;
 mod components;
 mod map;
 mod command;
