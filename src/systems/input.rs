@@ -7,6 +7,7 @@ use crate::components::{PlayerControl, MyTurn, Position};
 use crate::systems::movement::{Dir};
 use tcod::input::*;
 use tcod::console::*;
+use crate::CONFIG;
 
 #[derive(Debug)]
 pub struct Input {
@@ -111,12 +112,12 @@ impl<'a> System<'a> for Input {
 
 //                        println!("{}, {}", dest.0, dest.1);
 
-                        if (dest.0 as usize) >= data.entity_map.width
-                            || (dest.1 as usize) >= data.entity_map.height
+                        if (dest.0 as usize) >= CONFIG.map_width as usize
+                            || (dest.1 as usize) >= CONFIG.map_height as usize
                             || (dest.0 as usize) < 0
                             || (dest.1 as usize) < 0 {
 
-                            return
+                            continue
                         }
 
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
