@@ -102,6 +102,17 @@ impl Movement {
         let mut dest_x = position.x +  move_command.dx;
         let mut dest_y = position.y + move_command.dy;
 
+        // if out of bounds, dont go anywhere
+        if dest_x >= CONFIG.map_width || dest_x < 0 || dest_y >= CONFIG.map_height || dest_y < 0 {
+            return MoveEvent::new(
+                entity,
+                start_x,
+                start_y,
+                start_x,
+                start_y,
+            )
+        }
+
         if !view.is_walkable(dest_x, dest_y) || actor_map.retrieve(dest_x, dest_y).unwrap() != None {
             dest_x = start_x;
             dest_y = start_y;
