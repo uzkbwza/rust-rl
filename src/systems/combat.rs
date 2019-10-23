@@ -5,7 +5,7 @@ use crate::systems::movement::Dir;
 use crate::ecs::MessageLog;
 use crate::components::flags::*;
 use crate::CONFIG;
-use crate::systems::render::Elevation;
+use crate::components::Elevation;
 use crate::map::*;
 
 pub struct Attack;
@@ -35,6 +35,7 @@ pub struct CombatSystemData<'a> {
     pub ai_units: WriteStorage<'a, AiControl>,
     pub view: WriteExpect<'a, View>,
     pub players: ReadStorage<'a, PlayerControl>,
+    pub elevations: WriteStorage<'a, Elevation>,
 
 }
 
@@ -134,7 +135,6 @@ impl<'a> System<'a> for DeathSystem {
             if let Some(renderable) = data.renderables.get_mut(ent) {
                 renderable.fg_color = (100, 100, 100);
                 renderable.bg_color = Some((60,0,0));
-                renderable.elevation = Elevation::OnFloor;
             }
 
             if let Some(pos) = data.positions.get(ent) {
@@ -142,6 +142,8 @@ impl<'a> System<'a> for DeathSystem {
                 data.entity_map.actors.set_point(pos.x, pos.y, None);
                 view.set(pos.x, pos.y, true, true);
             }
+
+            data.elevations.insert(ent, Elevation::OnFloor);
 
             data.move_requests.remove(ent);
             data.attack_requests.remove(ent);

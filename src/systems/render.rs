@@ -13,14 +13,6 @@ use rand::prelude::*;
 
 pub type TileMap = VecMap<Option<Tile>>;
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Deserialize)]
-pub enum Elevation {
-    Floor,
-    OnFloor,
-    Upright,
-    _InAir,
-}
-
 pub struct LayeredTileMap {
     pub floor_tiles: TileMap,
     pub on_floor_tiles: TileMap,
@@ -100,9 +92,15 @@ impl Viewport {
                 continue
             }
 
+            let mut elevation = Elevation::Upright;
+
+            if let Some(e) = data.elevations.get(ent) {
+                elevation = *e
+            }
+
             let mut tile = Tile {
                 position: screen_pos,
-                elevation: renderable.elevation,
+                elevation,
                 glyph,
                 fg_color,
                 bg_color,
@@ -253,6 +251,7 @@ pub struct RenderSystemData<'a> {
     my_turns: ReadStorage<'a, MyTurn>,
     names: ReadStorage<'a, Name>,
     actors: ReadStorage<'a, Actor>,
+    elevations: ReadStorage<'a, Elevation>,
 }
 
 pub struct RenderViewport {
@@ -401,7 +400,6 @@ impl<'a> System<'a> for RandomRender {
                     glyph,
                     fg_color,
                     bg_color,
-                    elevation: random_renderable.elevation,
                 };
                 data.renderables.insert(ent, new_renderable);
             }

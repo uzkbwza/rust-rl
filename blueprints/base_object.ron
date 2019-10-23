@@ -7,8 +7,10 @@
         glyph: '?',
         fg_color: (50,50,50),
         bg_color: Some((10,10,10)),
-        elevation: Floor
     )),
+
+    elevation: Some(OnFloor),
+
 
     corporeal: Some((
         max_hp: 10,

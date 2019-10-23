@@ -3,7 +3,6 @@ use rltk::RGB;
 use crate::systems::ai::types::AiType;
 use std::collections::HashMap;
 use crate::bodyparts::*;
-use crate::systems::render::Elevation;
 use crate::CONFIG;
 use crate::command::Command;
 use serde::Deserialize;
@@ -189,20 +188,28 @@ impl Position {
     }
 }
 
-
 // TODO: separate elevation into its own component type
+
+#[derive(Component, Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Deserialize)]
+#[storage(VecStorage)]
+pub enum Elevation {
+    Floor,
+    OnFloor,
+    Upright,
+    _InAir,
+}
+
 #[derive(Component, Clone, Deserialize, Debug)]
 #[storage(VecStorage)]
 pub struct Renderable {
     pub glyph: char,
     pub fg_color: (u8, u8, u8),
     pub bg_color: Option<(u8, u8, u8)>,
-    pub elevation: Elevation
 }
 
 impl Renderable {
-    pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>, elevation: Elevation) -> Self {
-        Renderable { glyph, fg_color, bg_color, elevation }
+    pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>) -> Self {
+        Renderable { glyph, fg_color, bg_color }
     }
 }
 
@@ -212,7 +219,6 @@ pub struct RandomRenderable {
     pub glyphs: String,
     pub fg_colors: Vec<(u8, u8, u8)>,
     pub bg_colors: Option<Vec<(u8, u8, u8)>>,
-    pub elevation: Elevation,
 }
 
 #[derive(Component)]
@@ -295,6 +301,10 @@ pub struct BlockMovement;
 #[derive(Component, PartialEq, Default, Debug)]
 #[storage(NullStorage)]
 pub struct CanSeeTarget;
+
+#[derive(Component, PartialEq, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Carryable;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]

@@ -202,4 +202,5 @@ make_entity_blueprint_template! {
     invulnerable: Invulnerable,
     blocks_movement: BlockMovement,
     blocks_sight: BlockSight,
+    elevation: Elevation,
 }
