@@ -1,13 +1,13 @@
+use shrev::EventChannel;
 use specs::prelude::*;
-use shrev::{EventChannel};
 
 use crate::command::{Command, CommandEvent};
+use crate::components::{MyTurn, PlayerControl, Position};
 use crate::map::*;
-use crate::components::{PlayerControl, MyTurn, Position};
-use crate::systems::movement::{Dir};
-use tcod::input::*;
-use tcod::console::*;
+use crate::systems::movement::Dir;
 use crate::CONFIG;
+use tcod::console::*;
+use tcod::input::*;
 
 #[derive(Debug)]
 pub struct Input {
@@ -15,9 +15,7 @@ pub struct Input {
     key_reader: Option<ReaderId<Key>>,
 }
 
-pub trait KeyInterface {
-
-}
+pub trait KeyInterface {}
 
 impl Input {
     pub fn new() -> Self {
@@ -45,31 +43,33 @@ impl Input {
                 _ => None,
             },
 
-            _ => None
+            _ => None,
         }
     }
 }
 
 #[derive(SystemData)]
 pub struct InputSystemData<'a> {
-    pub entities:   Entities<'a>,
+    pub entities: Entities<'a>,
     pub entity_map: ReadExpect<'a, EntityMap>,
     pub view: ReadExpect<'a, View>,
-    pub players:    ReadStorage<'a, PlayerControl>,
+    pub players: ReadStorage<'a, PlayerControl>,
     pub positions: ReadStorage<'a, Position>,
-    pub my_turns:   WriteStorage<'a, MyTurn>,
-    pub world_updater:          Read<'a, LazyUpdate>,
+    pub my_turns: WriteStorage<'a, MyTurn>,
+    pub world_updater: Read<'a, LazyUpdate>,
     pub game_state: WriteExpect<'a, crate::GameState>,
-    pub key_channel:      Read<'a, EventChannel<Key>>,
-    pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
+    pub key_channel: Read<'a, EventChannel<Key>>,
+    pub command_event_channel: Write<'a, EventChannel<CommandEvent>>,
 }
 
 impl<'a> System<'a> for Input {
     type SystemData = InputSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-
-        match self.key_reader { None => return, _ => () }
+        match self.key_reader {
+            None => return,
+            _ => (),
+        }
         let keys = data.key_channel.read(self.key_reader.as_mut().unwrap());
         for key in keys {
             if self.command_queue.len() < 3 {
@@ -79,15 +79,17 @@ impl<'a> System<'a> for Input {
             }
         }
 
-        if self.command_queue.is_empty() { return }
-//        println!("{:?}", self.command_queue);
+        if self.command_queue.is_empty() {
+            return;
+        }
+        //        println!("{:?}", self.command_queue);
         let command = self.command_queue.pop();
 
         for (ent, _player, _my_turn) in (&data.entities, &data.players, &mut data.my_turns).join() {
             match command {
                 None => return,
                 // meta commands
-                Some(Command::EndGame) => { data.game_state.game_end = true }
+                Some(Command::EndGame) => data.game_state.game_end = true,
 
                 // player commands
                 Some(Command::Move(dir)) => {
@@ -101,42 +103,43 @@ impl<'a> System<'a> for Input {
                             match dpos.0 + pos.x {
                                 x if x >= fov_map.size().0 => fov_map.size().0 - 1,
                                 x if x < 0 => 0,
-                                _ => dpos.0 + pos.x
+                                _ => dpos.0 + pos.x,
                             },
                             match dpos.1 + pos.y {
                                 y if y >= fov_map.size().1 => fov_map.size().1 - 1,
                                 y if y < 0 => 0,
-                                _ => dpos.1 + pos.y
+                                _ => dpos.1 + pos.y,
                             },
                         );
 
-//                        println!("{}, {}", dest.0, dest.1);
+                        //                        println!("{}, {}", dest.0, dest.1);
 
                         if (dest.0 as usize) >= CONFIG.map_width as usize
                             || (dest.1 as usize) >= CONFIG.map_height as usize
                             || (dest.0 as usize) < 0
-                            || (dest.1 as usize) < 0 {
-
-                            continue
+                            || (dest.1 as usize) < 0
+                        {
+                            continue;
                         }
 
                         if !fov_map.is_walkable(dest.0, dest.1) && dir != Dir::Nowhere {
-
                             // attack enemy instead if closeby
                             if let Ok(_) = data.entity_map.actors.retrieve(dest.0, dest.1) {
                                 command_event = CommandEvent::new(Command::Attack(dir), ent);
 
-                                // make sure bumping into walls doesnt take a turn
-                            } else { continue }
+                            // make sure bumping into walls doesnt take a turn
+                            } else {
+                                continue;
+                            }
                         }
                         data.command_event_channel.single_write(command_event);
                         // println!("{:?}", command_event);
                         data.game_state.world_time.increment_player_turn();
                     }
-                },
+                }
                 _ => (),
             }
-//            println!("{:?}", command);
+            //            println!("{:?}", command);
         }
     }
 
@@ -146,9 +149,7 @@ impl<'a> System<'a> for Input {
         world.insert(command_event_channel);
 
         // incoming input events
-        self.key_reader = Some(world.
-            fetch_mut::<EventChannel<Key>>()
-            .register_reader());
+        self.key_reader = Some(world.fetch_mut::<EventChannel<Key>>().register_reader());
     }
 }
 
@@ -156,7 +157,7 @@ pub struct InputListener;
 
 #[derive(SystemData)]
 pub struct InputListenerSystemData<'a> {
-    pub key_channel:      Write<'a, EventChannel<Key>>,
+    pub key_channel: Write<'a, EventChannel<Key>>,
     pub console: ReadExpect<'a, Root>,
 }
 

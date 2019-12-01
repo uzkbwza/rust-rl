@@ -1,16 +1,16 @@
-use specs::prelude::*;
-use shrev::{EventChannel};
 use crate::command::{Command, CommandEvent};
 use crate::components::*;
-use crate::systems::movement::{Dir};
 use crate::map::{EntityMap, View};
-pub mod types;
-pub mod thinking;
+use crate::systems::movement::Dir;
+use shrev::EventChannel;
+use specs::prelude::*;
 mod pathfinding;
-use types::AiType;
-use types::monster::*;
-use thinking::Thinking;
+pub mod thinking;
+pub mod types;
 use crate::MessageLog;
+use thinking::Thinking;
+use types::monster::*;
+use types::AiType;
 
 // use std::sync::{Arc, Mutex};
 
@@ -30,22 +30,21 @@ pub struct AiSystemData<'a> {
     pub players: ReadStorage<'a, PlayerControl>,
     pub entity_map: ReadExpect<'a, EntityMap>,
     pub sees_targets: ReadStorage<'a, CanSeeTarget>,
-    pub positions:  ReadStorage<'a, Position>,
-    pub targets:     WriteStorage<'a, Target>,
-    pub ai_units:    ReadStorage<'a, AiControl>,
+    pub positions: ReadStorage<'a, Position>,
+    pub targets: WriteStorage<'a, Target>,
+    pub ai_units: ReadStorage<'a, AiControl>,
     pub seers: ReadStorage<'a, Seeing>,
-    pub my_turns:   WriteStorage<'a, MyTurn>,
-    pub world_updater:  Read<'a, LazyUpdate>,
+    pub my_turns: WriteStorage<'a, MyTurn>,
+    pub world_updater: Read<'a, LazyUpdate>,
     pub game_state: ReadExpect<'a, crate::GameState>,
-    pub command_event_channel:  Write<'a, EventChannel<CommandEvent>>,
+    pub command_event_channel: Write<'a, EventChannel<CommandEvent>>,
     pub view: ReadExpect<'a, View>,
     pub actors: WriteStorage<'a, Actor>,
     pub command_sequences: WriteStorage<'a, CommandSequence>,
     pub message_log: WriteExpect<'a, MessageLog>,
 }
 
-
-impl <'a> System<'a> for Ai {
+impl<'a> System<'a> for Ai {
     type SystemData = AiSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
@@ -59,7 +58,14 @@ impl <'a> System<'a> for Ai {
         // actually sends out the command events.
         let mut commands = Vec::new();
 
-        for (ent, ai_unit, sequence, _my_turn) in (&data.entities, &data.ai_units, &data.command_sequences, &data.my_turns).join() {
+        for (ent, ai_unit, sequence, _my_turn) in (
+            &data.entities,
+            &data.ai_units,
+            &data.command_sequences,
+            &data.my_turns,
+        )
+            .join()
+        {
             let mut command_sequence: Vec<Command> = Vec::new();
             let mut command_event: Option<CommandEvent> = None;
 
@@ -79,15 +85,14 @@ impl <'a> System<'a> for Ai {
 
             // if nothing in command sequence, get the command
             command_sequence = match sequence.commands.is_empty() || reset_command_sequence {
-                true => { Self::get_command(ent, ai_type, &data ) },
-                false => { sequence.commands.clone() },
+                true => Self::get_command(ent, ai_type, &data),
+                false => sequence.commands.clone(),
             };
 
-//            println!("{:?}", &command_sequence);
+            //            println!("{:?}", &command_sequence);
 
             command_event = Some(CommandEvent::new(command_sequence.pop().unwrap(), ent));
             commands.push((command_sequence, command_event));
-
         }
 
         for (command_sequence, command_event) in commands {
@@ -99,7 +104,14 @@ impl <'a> System<'a> for Ai {
             }
         }
 
-        for (entity, target, _sees_target, _my_turn) in (&data.entities, &mut data.targets, !&data.sees_targets, &data.my_turns).join() {
+        for (entity, target, _sees_target, _my_turn) in (
+            &data.entities,
+            &mut data.targets,
+            !&data.sees_targets,
+            &data.my_turns,
+        )
+            .join()
+        {
             target.decrement_timer();
             // println!("{}", target.give_up_timer);
             if target.give_up_timer <= 0 {

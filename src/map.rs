@@ -1,7 +1,7 @@
-use specs::prelude::*;
-use tcod::map::Map as TcodMap;
-use std::sync::{Arc, Mutex};
 use crate::CONFIG;
+use specs::prelude::*;
+use std::sync::{Arc, Mutex};
+use tcod::map::Map as TcodMap;
 use vecmap::*;
 
 pub type ActorMap = VecMap<Option<Entity>>;
@@ -16,7 +16,7 @@ pub struct EntityMap {
 impl EntityMap {
     pub fn new(width: usize, height: usize) -> Self {
         let actor_map = ActorMap::filled_with(None, CONFIG.map_width, CONFIG.map_height);
-        
+
         EntityMap {
             actors: actor_map,
             width,
@@ -29,9 +29,8 @@ impl EntityMap {
 // currently not actually used for anything...
 pub struct View {
     pub map: Arc<Mutex<TcodMap>>,
-    pub block_map: VecMap<BlockTile>
+    pub block_map: VecMap<BlockTile>,
 }
-
 
 #[derive(Clone, Copy)]
 pub struct BlockTile {

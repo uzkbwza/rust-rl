@@ -2,7 +2,6 @@ use specs::prelude::*;
 
 #[derive(Debug)]
 pub enum BodyPartTag {
-
     // for the main body that everything attaches to
     Core,
 
@@ -52,4 +51,3 @@ impl BodyPart {
         self.children.push(body_part);
     }
 }
-

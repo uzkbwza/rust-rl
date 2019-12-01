@@ -1,5 +1,5 @@
-pub mod monster;
 pub mod dummy;
+pub mod monster;
 use serde::Deserialize;
 
 #[derive(Debug, Copy, Clone, Deserialize)]

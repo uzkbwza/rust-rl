@@ -1,39 +1,41 @@
-use specs::prelude::*;
 use crate::command::{Command, CommandEvent};
-use crate::systems::movement::{Dir};
 use crate::components::flags::requests::*;
 use crate::components::*;
+use crate::systems::movement::Dir;
 use shrev::{EventChannel, ReaderId};
+use specs::prelude::*;
 
 pub struct ActionHandler {
-    command_event_reader: Option<ReaderId<CommandEvent>>
+    command_event_reader: Option<ReaderId<CommandEvent>>,
 }
 
 impl ActionHandler {
     pub fn new() -> Self {
         ActionHandler {
-            command_event_reader: None
+            command_event_reader: None,
         }
     }
 }
 
 #[derive(SystemData)]
 pub struct ActionHandlerSystemData<'a> {
-        move_requests: WriteStorage<'a, MoveRequest>,
-        players: WriteStorage<'a, PlayerControl>,
-        attack_requests: WriteStorage<'a, AttackRequest>,
-        my_turns: WriteStorage<'a, MyTurn>,
-        game_state: WriteExpect<'a, crate::GameState>,
+    move_requests: WriteStorage<'a, MoveRequest>,
+    players: WriteStorage<'a, PlayerControl>,
+    attack_requests: WriteStorage<'a, AttackRequest>,
+    my_turns: WriteStorage<'a, MyTurn>,
+    game_state: WriteExpect<'a, crate::GameState>,
 
-        // read event channels
-        command_event_channel: Read<'a, EventChannel<CommandEvent>>,
+    // read event channels
+    command_event_channel: Read<'a, EventChannel<CommandEvent>>,
 }
 
 impl<'a> System<'a> for ActionHandler {
     type SystemData = ActionHandlerSystemData<'a>;
-    
+
     fn run(&mut self, mut data: Self::SystemData) {
-        let command_events = data.command_event_channel.read(self.command_event_reader.as_mut().unwrap());
+        let command_events = data
+            .command_event_channel
+            .read(self.command_event_reader.as_mut().unwrap());
         for command_event in command_events {
             let entity = command_event.entity;
             // println!("{:?}: {:?}", command_event.entity, &command_event.command);
@@ -45,8 +47,8 @@ impl<'a> System<'a> for ActionHandler {
                         error!("Failed to insert move request: {}", err)
                     }
                     // println!("added move request");
-                },
-                
+                }
+
                 Command::Attack(dir) => {
                     let attack_request = AttackRequest::new(dir);
                     if let Err(err) = data.attack_requests.insert(entity, attack_request) {
@@ -67,8 +69,10 @@ impl<'a> System<'a> for ActionHandler {
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.command_event_reader = Some(world.
-            fetch_mut::<EventChannel<CommandEvent>>()
-            .register_reader());
+        self.command_event_reader = Some(
+            world
+                .fetch_mut::<EventChannel<CommandEvent>>()
+                .register_reader(),
+        );
     }
 }

@@ -1,12 +1,12 @@
-use specs::prelude::*;
-use crate::components::*;
 use crate::components::flags::requests::*;
-use crate::systems::movement::Dir;
-use crate::ecs::MessageLog;
 use crate::components::flags::*;
-use crate::CONFIG;
 use crate::components::Elevation;
+use crate::components::*;
+use crate::ecs::MessageLog;
 use crate::map::*;
+use crate::systems::movement::Dir;
+use crate::CONFIG;
+use specs::prelude::*;
 
 pub struct Attack;
 
@@ -36,7 +36,6 @@ pub struct CombatSystemData<'a> {
     pub view: WriteExpect<'a, View>,
     pub players: ReadStorage<'a, PlayerControl>,
     pub elevations: WriteStorage<'a, Elevation>,
-
 }
 
 impl Attack {
@@ -49,20 +48,42 @@ impl<'a> System<'a> for Attack {
     type SystemData = CombatSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        for (ent, pos, name, corporeal, attack_request) in (&data.entities, &data.positions, &data.names, &data.corporeals, &mut data.attack_requests).join() {
+        for (ent, pos, name, corporeal, attack_request) in (
+            &data.entities,
+            &data.positions,
+            &data.names,
+            &data.corporeals,
+            &mut data.attack_requests,
+        )
+            .join()
+        {
             data.world_updater.remove::<AttackRequest>(ent);
             let attack_pos = Dir::dir_to_pos(attack_request.dir);
             let attack_pos = Position::new(pos.x + attack_pos.0, pos.y + attack_pos.1);
             let attack_damage = corporeal.base_damage;
 
-            for (target_entity, target_pos, target_name, corporeal, _floor) in (&data.entities, &data.positions, &data.names, &data.corporeals, !&data.floors).join() {
+            for (target_entity, target_pos, target_name, corporeal, _floor) in (
+                &data.entities,
+                &data.positions,
+                &data.names,
+                &data.corporeals,
+                !&data.floors,
+            )
+                .join()
+            {
                 // don't do anything when entity attacks empty space
                 if *target_pos == attack_pos {
-                    data.message_log.log(format!("{} attempts to attack {}!", name.name, target_name.name));
-                    data.defenders.insert(target_entity, Defending {
-                        damage_source: ent,
-                        damage_amount: attack_damage,
-                    });
+                    data.message_log.log(format!(
+                        "{} attempts to attack {}!",
+                        name.name, target_name.name
+                    ));
+                    data.defenders.insert(
+                        target_entity,
+                        Defending {
+                            damage_source: ent,
+                            damage_amount: attack_damage,
+                        },
+                    );
                 }
             }
 
@@ -83,7 +104,15 @@ impl<'a> System<'a> for Defend {
     type SystemData = CombatSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        for (ent, pos, name, mut corporeal, defender) in (&data.entities, &data.positions, &data.names, &mut data.corporeals, &mut data.defenders).join() {
+        for (ent, pos, name, mut corporeal, defender) in (
+            &data.entities,
+            &data.positions,
+            &data.names,
+            &mut data.corporeals,
+            &mut data.defenders,
+        )
+            .join()
+        {
             data.world_updater.remove::<Defending>(ent);
             let dmg = defender.damage_amount;
             let attacker = defender.damage_source;
@@ -95,24 +124,29 @@ impl<'a> System<'a> for Defend {
             match data.invulnerables.get(ent) {
                 None => {
                     corporeal.hp -= dmg;
-                    data.message_log.log(format!("{} hits {} for {} damage!!", attacker_name, name.name, dmg));
+                    data.message_log.log(format!(
+                        "{} hits {} for {} damage!!",
+                        attacker_name, name.name, dmg
+                    ));
                     if corporeal.hp <= 0 {
-                        data.message_log.log(format!("{} is vanquished!!!", name.name));
+                        data.message_log
+                            .log(format!("{} is vanquished!!!", name.name));
                         match data.bodies.get(ent) {
                             Some(_) => {
                                 corporeal.hp = corporeal.max_hp;
-                                data.deaths.insert(ent, Death{});
-                            },
+                                data.deaths.insert(ent, Death {});
+                            }
                             None => {
                                 data.entities.delete(ent);
                             }
                         }
-
                     }
-                },
+                }
 
                 Some(_) => {
-                    data.message_log.log(String::from("It's as if the attack is deflected by a divine force!"));
+                    data.message_log.log(String::from(
+                        "It's as if the attack is deflected by a divine force!",
+                    ));
                 }
             }
         }
@@ -125,16 +159,16 @@ impl<'a> System<'a> for DeathSystem {
 
     fn run(&mut self, mut data: Self::SystemData) {
         for (death, ent) in (&data.deaths, &data.entities).join() {
-            data.corpses.insert(ent, Corpse{});
+            data.corpses.insert(ent, Corpse {});
             data.world_updater.remove::<Death>(ent);
             if let Some(name) = data.names.get_mut(ent) {
-                name.name = format!("corpse of {}", {&name.name});
+                name.name = format!("corpse of {}", { &name.name });
             }
 
             data.actors.remove(ent);
             if let Some(renderable) = data.renderables.get_mut(ent) {
                 renderable.fg_color = (100, 100, 100);
-                renderable.bg_color = Some((60,0,0));
+                renderable.bg_color = Some((60, 0, 0));
             }
 
             if let Some(pos) = data.positions.get(ent) {
@@ -149,7 +183,6 @@ impl<'a> System<'a> for DeathSystem {
             data.attack_requests.remove(ent);
             data.action_results.remove(ent);
             data.ai_units.remove(ent);
-
         }
     }
 }

@@ -1,11 +1,10 @@
-use specs::prelude::*;
-use rltk::RGB;
-use crate::systems::ai::types::AiType;
-use std::collections::HashMap;
 use crate::bodyparts::*;
-use crate::CONFIG;
 use crate::command::Command;
+use crate::systems::ai::types::AiType;
+use crate::CONFIG;
 use serde::Deserialize;
+use specs::prelude::*;
+use std::collections::HashMap;
 
 pub mod flags;
 
@@ -26,7 +25,7 @@ impl Target {
         Target {
             entity,
             position,
-            give_up_timer: 15
+            give_up_timer: 15,
         }
     }
 
@@ -39,13 +38,13 @@ impl Target {
 #[storage(VecStorage)]
 pub struct Name {
     #[serde(default)]
-    pub name: String
+    pub name: String,
 }
 
 impl Name {
     pub fn new(name: &str) -> Self {
         Name {
-            name: String::from(name)
+            name: String::from(name),
         }
     }
 }
@@ -54,13 +53,13 @@ impl Name {
 #[storage(DenseVecStorage)]
 pub struct Mobile {
     #[serde(default)]
-    pub quickness: u32
+    pub quickness: u32,
 }
 
 impl Default for Mobile {
     fn default() -> Self {
         Mobile {
-            quickness: CONFIG.base_turn_time
+            quickness: CONFIG.base_turn_time,
         }
     }
 }
@@ -83,7 +82,7 @@ pub struct CommandSequence {
 impl Default for CommandSequence {
     fn default() -> Self {
         CommandSequence {
-            commands: Vec::new()
+            commands: Vec::new(),
         }
     }
 }
@@ -108,22 +107,24 @@ pub struct Stats {
 impl Default for Stats {
     fn default() -> Self {
         Stats {
-        strength: 10,
-        agility: 10,
-        intelligence: 10 }
+            strength: 10,
+            agility: 10,
+            intelligence: 10,
+        }
     }
 }
 
 impl Actor {
     pub fn new() -> Self {
         let stats = Stats {
-                strength: 0,
-                agility: 0,
-                intelligence: 0 };
+            strength: 0,
+            agility: 0,
+            intelligence: 0,
+        };
 
-        Actor { 
+        Actor {
             next_turn: 0,
-            stats
+            stats,
         }
     }
 
@@ -133,8 +134,8 @@ impl Actor {
             stats: Stats {
                 strength,
                 agility,
-                intelligence
-            }
+                intelligence,
+            },
         }
     }
 
@@ -177,7 +178,7 @@ pub struct AiControl {
 
 #[derive(Component, Clone, Deserialize, Copy, Debug, PartialEq)]
 #[storage(VecStorage)]
-pub struct Position{
+pub struct Position {
     pub x: i32,
     pub y: i32,
 }
@@ -209,7 +210,11 @@ pub struct Renderable {
 
 impl Renderable {
     pub fn new(glyph: char, fg_color: (u8, u8, u8), bg_color: Option<(u8, u8, u8)>) -> Self {
-        Renderable { glyph, fg_color, bg_color }
+        Renderable {
+            glyph,
+            fg_color,
+            bg_color,
+        }
     }
 }
 
@@ -219,12 +224,6 @@ pub struct RandomRenderable {
     pub glyphs: String,
     pub fg_colors: Vec<(u8, u8, u8)>,
     pub bg_colors: Option<Vec<(u8, u8, u8)>>,
-}
-
-#[derive(Component)]
-#[storage(VecStorage)]
-pub struct BoxRenderable {
-    pub map: Vec<Vec<(char, RGB)>>,
 }
 
 #[derive(Component, Debug)]
@@ -273,7 +272,7 @@ impl Seeing {
     pub fn new(fov: i32) -> Self {
         Seeing {
             fov,
-            seen: HashMap::new()
+            seen: HashMap::new(),
         }
     }
 }
@@ -315,7 +314,7 @@ pub struct Inventory {
 #[derive(Component, Debug)]
 #[storage(DenseVecStorage)]
 pub struct Body {
-    core: BodyPart
+    core: BodyPart,
 }
 
 impl Body {
@@ -328,9 +327,7 @@ impl Body {
             equipped_armor: Vec::new(),
         };
 
-        Body {
-            core
-        }
+        Body { core }
     }
 
     // TODO: use something like JSON to store bodypart templates
@@ -371,7 +368,11 @@ impl Body {
             name: String::from("Left Hand"),
             children: Vec::new(),
             //MY GAME MY RULES
-            tags: vec![BodyPartTag::Limb, BodyPartTag::Grasping, BodyPartTag::Dominant],
+            tags: vec![
+                BodyPartTag::Limb,
+                BodyPartTag::Grasping,
+                BodyPartTag::Dominant,
+            ],
             armor_tags: vec![ArmorTag::Hand, ArmorTag::Jewelry(5)],
             equipped_armor: Vec::new(),
         };
@@ -427,8 +428,6 @@ impl Body {
         core.add_child(right_arm);
         core.add_child(right_leg);
 
-        Body {
-            core
-        }
+        Body { core }
     }
 }

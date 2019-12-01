@@ -1,8 +1,8 @@
-use specs::prelude::*;
-use crate::components::*;
 use crate::components::flags::ActionResult;
+use crate::components::*;
 use crate::time::Turn;
 use crate::CONFIG;
+use specs::prelude::*;
 
 #[derive(SystemData)]
 pub struct TurnAllocatorSystemData<'a> {
@@ -21,30 +21,33 @@ impl<'a> System<'a> for TurnAllocator {
     type SystemData = TurnAllocatorSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
         if !data.game_state.player_turn {
-            for (actor, entity, _my_turn) in (&data.actors, &data.entities, !&data.my_turns).join() {
+            for (actor, entity, _my_turn) in (&data.actors, &data.entities, !&data.my_turns).join()
+            {
                 let actor_next_turn = Turn {
                     tick: actor.next_turn,
-                    entity: entity
+                    entity: entity,
                 };
                 // println!("{}, {}", name.name, actor_next_turn.tick);
                 data.turn_queue.push(actor_next_turn);
             }
 
-            if data.turn_queue.is_empty() { return }
+            if data.turn_queue.is_empty() {
+                return;
+            }
 
             let next_turn = data.turn_queue.peek().unwrap().tick;
 
             // loop through all "next turns" that store the same tick, making sure all actors who are ready
-            // on the same turn get to act on the same gameloop iteration (unordered) 
+            // on the same turn get to act on the same gameloop iteration (unordered)
             while !data.turn_queue.is_empty() && data.turn_queue.peek().unwrap().tick == next_turn {
                 let turn = data.turn_queue.pop().unwrap();
                 assert_eq!(next_turn, turn.tick);
                 data.game_state.world_time.tick = turn.tick;
                 data.game_state.world_time.determine_world_turn();
-                if let Err(err) = data.my_turns.insert(turn.entity, MyTurn{}) {
+                if let Err(err) = data.my_turns.insert(turn.entity, MyTurn {}) {
                     error!("Failed to insert turn: {}", err)
                 }
-                
+
                 if let Some(_) = data.players.get(turn.entity) {
                     if !data.game_state.player_turn {
                         data.game_state.player_turn = true;

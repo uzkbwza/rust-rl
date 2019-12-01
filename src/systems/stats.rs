@@ -1,6 +1,6 @@
-use specs::prelude::*;
 use crate::components::*;
 use crate::CONFIG;
+use specs::prelude::*;
 pub struct _StatCalculator;
 
 #[derive(SystemData)]
@@ -18,7 +18,7 @@ impl QuicknessSystem {
         if agility > 9 {
             (agility - 10) * (base as i32 / 100)
         } else {
-            - ((10 - agility) * (base as i32 / 100))
+            -((10 - agility) * (base as i32 / 100))
         }
     }
 }

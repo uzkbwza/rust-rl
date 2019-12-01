@@ -1,6 +1,5 @@
-use specs::prelude::*;
 use crate::systems::movement::Dir;
-
+use specs::prelude::*;
 
 #[derive(Component, Default, Debug)]
 #[storage(VecStorage)]
@@ -11,10 +10,7 @@ pub struct MoveRequest {
 
 impl MoveRequest {
     pub fn new(dx: i32, dy: i32) -> Self {
-        MoveRequest {
-            dx,
-            dy,
-        }
+        MoveRequest { dx, dy }
     }
 }
 
@@ -26,8 +22,6 @@ pub struct AttackRequest {
 
 impl AttackRequest {
     pub fn new(dir: Dir) -> Self {
-        AttackRequest {
-            dir
-        }
+        AttackRequest { dir }
     }
 }

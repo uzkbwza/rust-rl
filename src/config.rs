@@ -1,11 +1,10 @@
-use toml::{Value, de::Error};
+use serde::Deserialize;
 use std::fs::File;
 use std::io::prelude::*;
-use serde::{Deserialize};
+use toml::{de::Error, Value};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-
     pub screen_width: i32,
     pub screen_height: i32,
 

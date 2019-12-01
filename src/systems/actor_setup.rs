@@ -1,6 +1,6 @@
-use specs::prelude::*;
 use crate::components::*;
 use crate::systems::ai::types::AiType;
+use specs::prelude::*;
 
 #[derive(SystemData)]
 pub struct ActorSetupSystemData<'a> {
@@ -16,7 +16,8 @@ impl<'a> System<'a> for ActorSetup {
     fn run(&mut self, mut data: Self::SystemData) {
         for (ent, actor) in (&data.entities, &data.actors).join() {
             if data.command_sequences.get(ent) == None {
-                data.command_sequences.insert(ent, CommandSequence::default());
+                data.command_sequences
+                    .insert(ent, CommandSequence::default());
             }
         }
     }

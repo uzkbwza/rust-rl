@@ -1,16 +1,16 @@
-use specs::prelude::*;
 use crate::components::*;
+use ron::de::from_reader;
 use serde::Deserialize;
-use std::fs::{File, read_dir};
+use specs::prelude::*;
+use specs::Builder;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::FileType;
+use std::fs::{read_dir, File};
 use std::io::prelude::*;
 use std::io::Read;
-use specs::Builder;
-use ron::de::from_reader;
-use std::collections::HashMap;
-use walkdir::WalkDir;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 pub type EntityLoadQueue = Vec<(String, Option<Position>)>;
 
@@ -20,26 +20,29 @@ struct BlueprintStorage {
     pub path: PathBuf,
 }
 
-
 pub struct EntityFactory {
     blueprints: HashMap<String, BlueprintStorage>,
 }
 
-
 impl EntityFactory {
     pub fn new(path: &str) -> Self {
         let mut factory = EntityFactory {
-            blueprints: HashMap::new()
+            blueprints: HashMap::new(),
         };
         let path = PathBuf::from(path);
         factory.build_map(&path);
         factory
     }
 
-    pub fn build(&mut self, name: String, world: &mut World, pos: Option<Position>) -> Option<Entity> {
+    pub fn build(
+        &mut self,
+        name: String,
+        world: &mut World,
+        pos: Option<Position>,
+    ) -> Option<Entity> {
         if !self.blueprints.contains_key(&name) {
             //            println!("Could not build blueprint: {}", &name);
-            return None
+            return None;
         }
 
         let mut blueprint_entry = self.blueprints.get_mut(&name);
@@ -47,9 +50,9 @@ impl EntityFactory {
             if let Some(blueprint) = &blueprint_storage.blueprint {
                 let mut blueprint = blueprint.clone();
                 blueprint.position = pos;
-//                println!{"BUILDING: {:?}", &name}
+                //                println!{"BUILDING: {:?}", &name}
                 let entity = blueprint.build(world);
-                return Some(entity)
+                return Some(entity);
             }
         }
         None
@@ -83,29 +86,24 @@ impl EntityFactory {
     }
 }
 
-
 fn get_blueprint_paths(path_buf: &PathBuf) -> Vec<PathBuf> {
-//    println!("{:?}", path);
+    //    println!("{:?}", path);
     let mut paths = Vec::new();
-    for entry in fs::read_dir(path_buf)
-        .expect(&format!("Problem reading path: {:?}", path_buf))
-        {
-            if let Ok(entry) = entry {
-                let ref path = entry.path();
-                let metadata = entry
-                    .metadata()
-                    .expect(&format!("Problem reading file metadata: {:?}", path));
+    for entry in fs::read_dir(path_buf).expect(&format!("Problem reading path: {:?}", path_buf)) {
+        if let Ok(entry) = entry {
+            let ref path = entry.path();
+            let metadata = entry
+                .metadata()
+                .expect(&format!("Problem reading file metadata: {:?}", path));
 
-                if metadata.is_dir() {
-                    paths.extend(get_blueprint_paths(path))
-                }
-
-                else if metadata.is_file() {
-//                    println!("{}", &formatted_path_name);
-                    paths.push(path.clone());
-                }
+            if metadata.is_dir() {
+                paths.extend(get_blueprint_paths(path))
+            } else if metadata.is_file() {
+                //                    println!("{}", &formatted_path_name);
+                paths.push(path.clone());
             }
         }
+    }
     paths
 }
 
@@ -119,7 +117,7 @@ fn format_path_name(path: &PathBuf) -> String {
                 } else if ancestor.parent() != None {
                     path_name = format!("{}.{}", ancestor_name.to_string_lossy(), path_name);
                 }
-            },
+            }
             None => (),
         }
     }

@@ -1,7 +1,7 @@
+use crate::CONFIG;
 use specs::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use crate::CONFIG;
 
 pub type TurnQueue = BinaryHeap<Turn>;
 
@@ -34,7 +34,6 @@ impl PartialEq for Turn {
         self.tick == other.tick
     }
 }
-
 
 impl WorldTime {
     pub fn new() -> Self {

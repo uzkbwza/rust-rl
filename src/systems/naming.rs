@@ -1,5 +1,5 @@
-use specs::prelude::*;
 use crate::components::*;
+use specs::prelude::*;
 
 pub struct Naming;
 

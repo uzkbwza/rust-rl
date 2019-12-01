@@ -1,15 +1,15 @@
-use specs::prelude::*;
 use crate::components::*;
-use crate::map::{View, EntityMap};
-use vecmap::*;
-use tcod::map::FovAlgorithm;
-use tcod::console::*;
-use tcod::Map as TcodMap;
+use crate::map::{EntityMap, View};
 use crate::MessageLog;
 use crate::CONFIG;
-use std::sync::MutexGuard;
-use serde::Deserialize;
 use rand::prelude::*;
+use serde::Deserialize;
+use specs::prelude::*;
+use std::sync::MutexGuard;
+use tcod::console::*;
+use tcod::map::FovAlgorithm;
+use tcod::Map as TcodMap;
+use vecmap::*;
 
 pub type TileMap = VecMap<Option<Tile>>;
 
@@ -45,10 +45,9 @@ impl Tile {
             elevation: Elevation::Floor,
             glyph: ' ',
             fg_color: (255, 255, 255),
-            bg_color: Some((0, 0, 0))
+            bg_color: Some((0, 0, 0)),
         }
     }
-
 }
 
 struct Viewport {
@@ -58,13 +57,16 @@ struct Viewport {
 }
 
 impl Viewport {
-
     pub fn set_tile(&self, mut tile: Tile, layered_tile_map: &mut LayeredTileMap) {
         let rend_pos = tile.position;
         let (x, y) = (rend_pos.x, rend_pos.y);
 
-        if x < 0 || x >= self.width { return };
-        if y < 0 || y >= self.height { return };
+        if x < 0 || x >= self.width {
+            return;
+        };
+        if y < 0 || y >= self.height {
+            return;
+        };
 
         let tile_map = match tile.elevation {
             Elevation::Floor => &mut layered_tile_map.floor_tiles,
@@ -75,21 +77,21 @@ impl Viewport {
 
         match tile_map.set_point(x, y, Some(tile)) {
             Ok(_) => (),
-            Err(e) => println!("{}", e)
+            Err(e) => println!("{}", e),
         }
     }
 
     // creates full character map of what the player sees and has seen.
     fn set_map(&mut self, data: &mut RenderSystemData) {
-
         let camera_pos = self.get_camera_position(data);
         for (ent, pos, renderable) in (&data.entities, &data.positions, &data.renderables).join() {
             let fov_map = data.view.map.lock().unwrap();
-            let (glyph, fg_color, bg_color) = (renderable.glyph, renderable.fg_color, renderable.bg_color);
+            let (glyph, fg_color, bg_color) =
+                (renderable.glyph, renderable.fg_color, renderable.bg_color);
             let screen_pos = self.get_screen_coordinates(*pos, camera_pos);
 
             if !fov_map.is_in_fov(pos.x, pos.y) {
-                continue
+                continue;
             }
 
             let mut elevation = Elevation::Upright;
@@ -105,7 +107,6 @@ impl Viewport {
                 fg_color,
                 bg_color,
             };
-
 
             if CONFIG.debug_vision {
                 tile = self.debug_process_tile(tile, &data, *pos, screen_pos, ent, fov_map)
@@ -126,10 +127,9 @@ impl Viewport {
                 let screen_pos = self.get_screen_coordinates(pos, camera_pos);
 
                 if fov_map.is_in_fov(x, y) {
-
                     let color = match fov_map.is_walkable(x, y) {
                         true => (5, 5, 10),
-                        false => (9, 9, 16)
+                        false => (9, 9, 16),
                     };
 
                     let mut tile = Tile::new();
@@ -150,12 +150,15 @@ impl Viewport {
 
     fn get_screen_coordinates(&self, pos: Position, camera_pos: Position) -> Position {
         let screen_center = Position::new(self.width / 2, self.height / 2);
-        Position::new(screen_center.x + pos.x - camera_pos.x, screen_center.y + pos.y - camera_pos.y)
+        Position::new(
+            screen_center.x + pos.x - camera_pos.x,
+            screen_center.y + pos.y - camera_pos.y,
+        )
     }
 
     fn _is_on_screen(&self, coords: Position) -> bool {
         if coords.x >= 0 && coords.x <= self.width && coords.y >= 0 && coords.y <= self.height {
-            return true
+            return true;
         }
         false
     }
@@ -164,12 +167,16 @@ impl Viewport {
         let screen_center = Position::new(self.width / 2, self.height / 2);
         let mut wx = rend_pos.x - screen_center.x + camera_pos.x;
         let mut wy = rend_pos.x - screen_center.x + camera_pos.y;
-        if wx > CONFIG.map_width { wx = CONFIG.map_width }
-        if wy > CONFIG.map_height { wy = CONFIG.map_height }
+        if wx > CONFIG.map_width {
+            wx = CONFIG.map_width
+        }
+        if wy > CONFIG.map_height {
+            wy = CONFIG.map_height
+        }
         Position::new(wx, wy)
     }
 
-    fn get_camera_position(&self,  data: &RenderSystemData) -> Position {
+    fn get_camera_position(&self, data: &RenderSystemData) -> Position {
         let mut camera_position = Position::new(0, 0);
         let viewport_width = self.width;
         let viewport_height = self.height;
@@ -201,7 +208,16 @@ impl Viewport {
         camera_position
     }
 
-    fn debug_process_tile(&self, mut tile: Tile, data: &RenderSystemData, pos: Position, screen_pos: Position, ent: Entity, fov_map: MutexGuard<TcodMap>) -> Tile {
+    // alter screen contents if debug is enabled
+    fn debug_process_tile(
+        &self,
+        mut tile: Tile,
+        data: &RenderSystemData,
+        pos: Position,
+        screen_pos: Position,
+        ent: Entity,
+        fov_map: MutexGuard<TcodMap>,
+    ) -> Tile {
         let entity_map = &data.entity_map.actors;
 
         if !fov_map.is_walkable(pos.x, pos.y) {
@@ -240,8 +256,8 @@ pub struct RenderSystemData<'a> {
     positions: ReadStorage<'a, Position>,
     players: ReadStorage<'a, PlayerControl>,
     cameras: ReadStorage<'a, Camera>,
-    floors:    ReadStorage<'a, Floor>,
-    on_floors:    ReadStorage<'a, OnFloor>,
+    floors: ReadStorage<'a, Floor>,
+    on_floors: ReadStorage<'a, OnFloor>,
     game_state: ReadExpect<'a, crate::GameState>,
     view: ReadExpect<'a, View>,
     layered_tile_map: WriteExpect<'a, LayeredTileMap>,
@@ -255,7 +271,7 @@ pub struct RenderSystemData<'a> {
 }
 
 pub struct RenderViewport {
-    viewport: Option<Viewport>
+    viewport: Option<Viewport>,
 }
 
 impl RenderViewport {
@@ -263,12 +279,10 @@ impl RenderViewport {
         let viewport = Some(Viewport {
             width: CONFIG.viewport_width,
             height: CONFIG.viewport_height,
-            seen: TileMap::filled_with(None, CONFIG.map_width, CONFIG.map_height)
+            seen: TileMap::filled_with(None, CONFIG.map_width, CONFIG.map_height),
         });
-        
-        RenderViewport {
-            viewport
-        }
+
+        RenderViewport { viewport }
     }
 
     pub fn render(console: &mut Root, tile_map: &mut TileMap) {
@@ -282,11 +296,14 @@ impl RenderViewport {
     }
 
     pub fn render_char(console: &mut Root, tile: Tile) {
+        if tile.position.x < 0 || tile.position.x >= console.width() {
+            return;
+        };
+        if tile.position.y < 0 || tile.position.y >= console.height() {
+            return;
+        };
 
-        if tile.position.x < 0 || tile.position.x >= console.width() { return };
-        if tile.position.y < 0 || tile.position.y >= console.height() { return };
-
-//        println!("{:?}", tile);
+        //        println!("{:?}", tile);
         let mut bg_color = console.get_char_background(tile.position.x, tile.position.y);
 
         let (fg_r, fg_g, fg_b) = tile.fg_color;
@@ -296,14 +313,18 @@ impl RenderViewport {
             bg_color.b = b;
         }
 
-        let fg_color = tcod::colors::Color{ r: fg_r, g: fg_g, b: fg_b };
+        let fg_color = tcod::colors::Color {
+            r: fg_r,
+            g: fg_g,
+            b: fg_b,
+        };
 
         console.put_char_ex(
             tile.position.x + CONFIG.viewport_x,
             tile.position.y + CONFIG.viewport_y,
             tile.glyph,
             fg_color,
-            bg_color
+            bg_color,
         );
     }
 }
@@ -312,10 +333,9 @@ impl<'a> System<'a> for RenderViewport {
     type SystemData = RenderSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-
         if !data.game_state.player_turn {
             tcod::system::set_fps(0);
-            return
+            return;
         }
 
         {
@@ -340,7 +360,6 @@ impl<'a> System<'a> for RenderViewport {
             viewport.set_map(&mut data);
         }
 
-
         let console = &mut data.console;
         console.clear();
         let mut layered_tile_map = &mut data.layered_tile_map;
@@ -359,10 +378,18 @@ impl<'a> System<'a> for RenderUi {
         let message_log_height = (CONFIG.screen_height - CONFIG.viewport_height) as usize;
         let mut formatted_message = String::new();
         for (i, message) in message_log.messages.iter().enumerate() {
-            if i > message_log_height { break }
+            if i > message_log_height {
+                break;
+            }
             formatted_message = format!("{}\n{}", message, formatted_message);
         }
-        console.print_rect(0,CONFIG.viewport_height, CONFIG.screen_width, message_log_height as i32, formatted_message);
+        console.print_rect(
+            0,
+            CONFIG.viewport_height,
+            CONFIG.screen_width,
+            message_log_height as i32,
+            formatted_message,
+        );
     }
 }
 
@@ -380,12 +407,13 @@ impl<'a> System<'a> for RandomRender {
     fn run(&mut self, mut data: Self::SystemData) {
         let mut rng = rand::thread_rng();
         for (random_renderable, ent) in (&mut data.random_renderables, &data.entities).join() {
-            let glyph = random_renderable.glyphs
-                .chars()
-                .choose(&mut rng)
-                .unwrap();
+            let glyph = random_renderable.glyphs.chars().choose(&mut rng).unwrap();
 
-            let fg_color = random_renderable.fg_colors.choose(&mut rng).unwrap().clone();
+            let fg_color = random_renderable
+                .fg_colors
+                .choose(&mut rng)
+                .unwrap()
+                .clone();
             let mut bg_color = None;
             if let Some(colors) = &random_renderable.bg_colors {
                 bg_color = Some(colors.choose(&mut rng).unwrap().clone());

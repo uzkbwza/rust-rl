@@ -1,12 +1,12 @@
-use specs::prelude::*;
-use crate::map::*;
-use crate::components::*;
 use crate::components::flags::requests::*;
+use crate::components::flags::ActionResult;
+use crate::components::*;
 use crate::map::View;
+use crate::map::*;
+use crate::CONFIG;
+use specs::prelude::*;
 use tcod::map::Map as TcodMap;
 use vecmap::*;
-use crate::CONFIG;
-use crate::components::flags::ActionResult;
 
 // use crate::systems::control::{CommandEvent};
 
@@ -26,32 +26,32 @@ pub enum Dir {
 }
 
 impl Dir {
-        pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
-            match dir {
-                Dir::N => (0, -1),
-                Dir::S => (0, 1),
-                Dir::E => (1, 0),
-                Dir::W => (-1, 0),
-                Dir::NW => (-1, -1),
-                Dir::NE => (1, -1),
-                Dir::SW => (-1, 1),
-                Dir::SE => (1, 1),
-                Dir::Nowhere => (0, 0),
-            }
+    pub fn dir_to_pos(dir: Dir) -> (i32, i32) {
+        match dir {
+            Dir::N => (0, -1),
+            Dir::S => (0, 1),
+            Dir::E => (1, 0),
+            Dir::W => (-1, 0),
+            Dir::NW => (-1, -1),
+            Dir::NE => (1, -1),
+            Dir::SW => (-1, 1),
+            Dir::SE => (1, 1),
+            Dir::Nowhere => (0, 0),
+        }
     }
 
     pub fn pos_to_dir(pos: (i32, i32)) -> Dir {
-            match pos {
-                (0, -1) => Dir::N,
-                (0, 1) => Dir::S,
-                (1, 0) => Dir::E,
-                (-1, 0) => Dir::W, 
-                (-1, -1) => Dir::NW,
-                (1, -1) => Dir::NE,
-                (-1, 1) => Dir::SW,
-                (1, 1) =>  Dir::SE,
-                _ =>  Dir::Nowhere,
-            }
+        match pos {
+            (0, -1) => Dir::N,
+            (0, 1) => Dir::S,
+            (1, 0) => Dir::E,
+            (-1, 0) => Dir::W,
+            (-1, -1) => Dir::NW,
+            (1, -1) => Dir::NE,
+            (-1, 1) => Dir::SW,
+            (1, 1) => Dir::SE,
+            _ => Dir::Nowhere,
+        }
     }
 }
 
@@ -63,7 +63,6 @@ pub struct MoveEvent {
     pub dest_x: i32,
     pub dest_y: i32,
 }
-
 
 impl MoveEvent {
     pub fn new(entity: Entity, start_x: i32, start_y: i32, dest_x: i32, dest_y: i32) -> Self {
@@ -83,37 +82,34 @@ pub struct CollisionEvent {
     collidee: Entity,
 }
 
-
 impl CollisionEvent {
     pub fn _new(collider: Entity, collidee: Entity) -> Self {
-        CollisionEvent {
-            collider,
-            collidee,
-        }
+        CollisionEvent { collider, collidee }
     }
 }
 
 pub struct Movement;
 
 impl Movement {
-    fn try_move_position(entity: Entity, position: &mut Position, move_command: &MoveRequest, view: &TcodMap, actor_map: &ActorMap) -> MoveEvent {
+    fn try_move_position(
+        entity: Entity,
+        position: &mut Position,
+        move_command: &MoveRequest,
+        view: &TcodMap,
+        actor_map: &ActorMap,
+    ) -> MoveEvent {
         let start_x = position.x;
         let start_y = position.y;
-        let mut dest_x = position.x +  move_command.dx;
+        let mut dest_x = position.x + move_command.dx;
         let mut dest_y = position.y + move_command.dy;
 
         // if out of bounds, dont go anywhere
         if dest_x >= CONFIG.map_width || dest_x < 0 || dest_y >= CONFIG.map_height || dest_y < 0 {
-            return MoveEvent::new(
-                entity,
-                start_x,
-                start_y,
-                start_x,
-                start_y,
-            )
+            return MoveEvent::new(entity, start_x, start_y, start_x, start_y);
         }
 
-        if !view.is_walkable(dest_x, dest_y) || actor_map.retrieve(dest_x, dest_y).unwrap() != None {
+        if !view.is_walkable(dest_x, dest_y) || actor_map.retrieve(dest_x, dest_y).unwrap() != None
+        {
             dest_x = start_x;
             dest_y = start_y;
         }
@@ -132,20 +128,13 @@ impl Movement {
         position.x = dest_x;
         position.y = dest_y;
 
-        MoveEvent::new(
-            entity,
-            start_x,
-            start_y,
-            position.x,
-            position.y,
-        )
+        MoveEvent::new(entity, start_x, start_y, position.x, position.y)
     }
 
     fn get_cost(base: u32, modifier: f32) -> u32 {
         (modifier * base as f32) as u32
     }
 }
-
 
 #[derive(SystemData)]
 pub struct MovementSystemData<'a> {
@@ -167,9 +156,8 @@ impl<'a> System<'a> for Movement {
     type SystemData = MovementSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        
         let mut view = data.view.map.lock().unwrap();
-        
+
         for (ent, move_request) in (&data.entities, &mut data.move_requests).join() {
             data.world_updater.remove::<MoveRequest>(ent);
             // println!("removed moverequest");
@@ -181,7 +169,9 @@ impl<'a> System<'a> for Movement {
                 let move_event = Self::try_move_position(ent, pos, move_request, &view, actor_map);
 
                 // diagonals cost should be more
-                let cost_modifier: f32 = match i32::abs(move_event.dest_x-move_event.start_x) + i32::abs(move_event.dest_y-move_event.start_y) {
+                let cost_modifier: f32 = match i32::abs(move_event.dest_x - move_event.start_x)
+                    + i32::abs(move_event.dest_y - move_event.start_y)
+                {
                     2 => f32::sqrt(2.0),
                     1 => 1.0,
                     _ => 1.0,
@@ -198,18 +188,21 @@ impl<'a> System<'a> for Movement {
                 // remove collider from previous position
                 match data.entity_map.actors.reset_point(x, y) {
                     Ok(_) => (),
-                    Err(e) => println!("{}", e)
+                    Err(e) => println!("{}", e),
                 }
                 view.set(x, y, true, true);
 
                 match data.entity_map.actors.set_point(dx, dy, Some(ent)) {
                     Ok(_) => (),
-                    Err(e) => println!("{}", e)
+                    Err(e) => println!("{}", e),
                 }
                 view.set(dx, dy, true, false);
 
                 if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
-                    error!("Failed to insert action result from Movement system: {}", err)
+                    error!(
+                        "Failed to insert action result from Movement system: {}",
+                        err
+                    )
                 }
             }
         }
