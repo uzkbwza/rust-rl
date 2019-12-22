@@ -46,6 +46,5 @@ lazy_static! {
 
 fn main() {
     let mut ecs = ecs::world_setup();
-
     ecs.main_loop();
 }

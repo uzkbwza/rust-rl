@@ -33,7 +33,7 @@ pub struct GameState {
 
 impl GameState {
     pub fn transition(&mut self, state: State) {
-        println!("{:?}", state);
+//        println!("{:?}", state);
         self.current_state = state;
     }
 
