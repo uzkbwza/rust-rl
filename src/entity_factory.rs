@@ -126,7 +126,7 @@ fn format_path_name(path: &PathBuf) -> String {
 }
 
 #[macro_export]
-macro_rules! make_entity_blueprint_template {
+macro_rules! entity_blueprint_template {
     {
         $($compname:ident: $comptype:ty,)+
     } => {
@@ -163,7 +163,7 @@ macro_rules! make_entity_blueprint_template {
 
         impl EntityFactory {
             fn load(&mut self, name: String) -> EntityBlueprint {
-                let ref path = self.blueprints.get(&name).unwrap().path;
+                let ref path = self.blueprints.get(&name).expect("Could not load blueprint").path;
                 let mut file = File::open(path)
                     .expect(&format!("blueprint file not found: {:?}", path));
                 let mut blueprint: EntityBlueprint = from_reader(file).expect(&format!("could not create blueprint: {:?}", path));
@@ -185,7 +185,7 @@ macro_rules! make_entity_blueprint_template {
     }
 }
 
-make_entity_blueprint_template! {
+entity_blueprint_template! {
     name: Name,
     actor: Actor,
     player: PlayerControl,

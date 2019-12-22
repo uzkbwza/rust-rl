@@ -2,6 +2,7 @@ use crate::components::*;
 use crate::map::{EntityMap, View};
 use crate::MessageLog;
 use crate::CONFIG;
+use crate::State;
 use rand::prelude::*;
 use serde::Deserialize;
 use specs::prelude::*;
@@ -75,10 +76,7 @@ impl Viewport {
             _ => unimplemented!(),
         };
 
-        match tile_map.set_point(x, y, Some(tile)) {
-            Ok(_) => (),
-            Err(e) => println!("{}", e),
-        }
+        tile_map.set_point(x, y, Some(tile));
     }
 
     // creates full character map of what the player sees and has seen.
@@ -333,7 +331,7 @@ impl<'a> System<'a> for RenderViewport {
     type SystemData = RenderSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        if !data.game_state.player_turn {
+        if data.game_state.current() == State::TurnProcess {
             tcod::system::set_fps(0);
             return;
         }

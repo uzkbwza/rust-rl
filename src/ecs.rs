@@ -1,4 +1,5 @@
-use crate::components::Position;
+
+use crate::components::{Position, Renderable};
 use crate::entity_factory::{EntityBlueprint, EntityFactory, EntityLoadQueue};
 use crate::map;
 use crate::systems;
@@ -12,12 +13,33 @@ use systems::render::LayeredTileMap;
 use tcod::console::*;
 use tcod::map::Map as TcodMap;
 use vecmap::*;
+use std::collections::HashMap;
+use shrev::EventChannel;
+use crate::command::CommandEvent;
+use tcod::input::Key;
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum State {
+    MapGen,
+    TurnProcess,
+    PlayerTurn,
+}
 
 pub struct GameState {
-    pub player_turn: bool,
-    pub real_time: bool,
+    current_state: State,
     pub game_end: bool,
     pub world_time: time::WorldTime,
+}
+
+impl GameState {
+    pub fn transition(&mut self, state: State) {
+        println!("{:?}", state);
+        self.current_state = state;
+    }
+
+    pub fn current(&self) -> State {
+        self.current_state
+    }
 }
 
 pub struct MessageLog {
@@ -45,12 +67,13 @@ impl MessageLog {
 
 pub struct Ecs {
     world: World,
-    dispatcher: Dispatcher<'static, 'static>,
+    dispatchers: HashMap<State, Dispatcher<'static, 'static>>,
 }
 
 impl Ecs {
     pub fn main_loop(&mut self) {
         let mut factory = EntityFactory::new("blueprints");
+        let mut current_state = None;
         loop {
             self.world.maintain();
             let mut blueprints: Vec<EntityBlueprint> = Vec::new();
@@ -58,12 +81,21 @@ impl Ecs {
             {
                 let game_state = self.world.read_resource::<GameState>();
                 let mut root = self.world.write_resource::<Root>();
+
+
                 root.flush();
+
                 if root.window_closed() || game_state.game_end {
                     break;
                 }
+
+                current_state = Some(game_state.current_state);
             }
-            self.dispatcher.dispatch_seq(&mut self.world);
+            let mut dispatcher = self.dispatchers
+                .get_mut(&current_state.unwrap())
+                .expect("Could not get dispatcher for state");
+
+            dispatcher.dispatch(&mut self.world);
         }
     }
 
@@ -91,9 +123,27 @@ impl Ecs {
 pub fn world_setup<'a, 'b>() -> Ecs {
     //    println!("{:?}", CONFIG);
     let mut world = World::new();
-    let builder = DispatcherBuilder::new()
-        .with(systems::render::RandomRender, "random_render_sys", &[])
+
+    let mut dispatchers = HashMap::new();
+
+    let map_gen_dispatcher = DispatcherBuilder::new()
         .with(systems::mapgen::MapGen::new(), "map_gen_sys", &[])
+        .build();
+
+    let player_turn_dispatcher = DispatcherBuilder::new()
+        .with(systems::render::RandomRender, "random_render_sys", &[])
+        .with(systems::input::InputListener, "input_listener_sys", &[])
+        .with(
+            systems::input::Input::new(),
+            "input_sys",
+            &["input_listener_sys"],
+        )
+        .with(
+            systems::render::RenderViewport::new(),
+            "render_viewport_sys",
+            &[],
+        )
+        .with(systems::render::RenderUi, "render_ui_sys", &[])
         .with(systems::naming::Naming, "naming_sys", &[])
         .with(systems::actor_setup::ActorSetup, "actor_setup_sys", &[])
         .with(
@@ -102,16 +152,40 @@ pub fn world_setup<'a, 'b>() -> Ecs {
             &[],
         )
         .with_barrier()
-        .with(systems::input::InputListener, "input_listener_sys", &[])
         .with(systems::ai::Ai, "ai_sys", &[])
-        .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
-        .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
-        //        .with_barrier()
+        .with(
+            systems::action::ActionHandler::new(),
+            "action_sys",
+            &["ai_sys"],
+        )
+        .with(systems::time::EndTurn, "end_turn_sys", &[])
+        .build();
+
+    let turn_process_dispatcher = DispatcherBuilder::new()
+        .with(systems::render::RandomRender, "random_render_sys", &[])
+        .with(systems::input::InputListener, "input_listener_sys", &[])
         .with(
             systems::input::Input::new(),
             "input_sys",
             &["input_listener_sys"],
         )
+        .with(
+            systems::render::RenderViewport::new(),
+            "render_viewport_sys",
+            &[],
+        )
+        .with(systems::render::RenderUi, "render_ui_sys", &[])
+        .with(systems::naming::Naming, "naming_sys", &[])
+        .with(systems::actor_setup::ActorSetup, "actor_setup_sys", &[])
+        .with(
+            systems::movement::CollisionMapUpdater::new(),
+            "collision_map_updater_sys",
+            &[],
+        )
+        .with_barrier()
+        .with(systems::ai::Ai, "ai_sys", &[])
+        .with(systems::time::TurnAllocator, "turn_allocator_sys", &[])
+        .with(systems::stats::QuicknessSystem, "quickness_sys", &[])
         .with(
             systems::action::ActionHandler::new(),
             "action_sys",
@@ -131,20 +205,20 @@ pub fn world_setup<'a, 'b>() -> Ecs {
         .with(systems::combat::Defend, "defend_sys", &["attack_sys"])
         //        .with_barrier()
         .with(systems::time::EndTurn, "end_turn_sys", &[])
-        .with(
-            systems::render::RenderViewport::new(),
-            "render_viewport_sys",
-            &[],
-        )
-        .with(systems::render::RenderUi, "render_ui_sys", &[]);
+        .build();
 
-    let mut dispatcher = builder.build();
-    dispatcher.setup(&mut world);
+    dispatchers.insert(State::MapGen, map_gen_dispatcher);
+    dispatchers.insert(State::TurnProcess, turn_process_dispatcher);
+    dispatchers.insert(State::PlayerTurn, player_turn_dispatcher);
+
+
+    for dispatcher in dispatchers.values_mut() {
+        dispatcher.setup(&mut world);
+    }
 
     let world_time = time::WorldTime::new();
     let game_state = GameState {
-        player_turn: false,
-        real_time: false,
+        current_state: State::MapGen,
         game_end: false,
         world_time,
     };
@@ -177,7 +251,25 @@ pub fn world_setup<'a, 'b>() -> Ecs {
     world.insert(root);
     world.insert(EntityLoadQueue::new());
 
-    dispatcher.dispatch(&mut world);
+    // insert event channels
+    let command_event_channel: EventChannel<CommandEvent> = EventChannel::new();
 
-    Ecs { world, dispatcher }
+    world.insert(command_event_channel);
+
+    // insert readers
+    let key_reader = world.fetch_mut::<EventChannel<Key>>().register_reader();
+    let command_event_reader = world.fetch_mut::<EventChannel<CommandEvent>>()
+        .register_reader();
+
+    world.insert(command_event_reader);
+    world.insert(key_reader);
+
+//    let dispatcher = dispatchers
+//        .get_mut(&game_state.current_state)
+//        .unwrap();
+//
+//    dispatcher.dispatch(&mut world);
+
+    Ecs { world, dispatchers }
 }
+
