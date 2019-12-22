@@ -12,7 +12,6 @@ use tcod::input::*;
 #[derive(Debug)]
 pub struct Input {
     command_queue: Vec<Command>,
-    key_reader: Option<ReaderId<Key>>,
 }
 
 pub trait KeyInterface {}
@@ -21,7 +20,6 @@ impl Input {
     pub fn new() -> Self {
         Input {
             command_queue: Vec::new(),
-            key_reader: None,
         }
     }
 
@@ -58,7 +56,8 @@ pub struct InputSystemData<'a> {
     pub my_turns: WriteStorage<'a, MyTurn>,
     pub world_updater: Read<'a, LazyUpdate>,
     pub game_state: WriteExpect<'a, crate::GameState>,
-    pub key_channel: Read<'a, EventChannel<Key>>,
+    pub key_channel: ReadExpect<'a, EventChannel<Key>>,
+    pub key_reader: WriteExpect<'a, ReaderId<Key>>,
     pub command_event_channel: Write<'a, EventChannel<CommandEvent>>,
 }
 
@@ -66,11 +65,8 @@ impl<'a> System<'a> for Input {
     type SystemData = InputSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        match self.key_reader {
-            None => return,
-            _ => (),
-        }
-        let keys = data.key_channel.read(self.key_reader.as_mut().unwrap());
+
+        let keys = data.key_channel.read(&mut data.key_reader);
         for key in keys {
             if self.command_queue.len() < 3 {
                 if let Some(command) = Self::get_command_from_key(*key) {
@@ -142,22 +138,14 @@ impl<'a> System<'a> for Input {
             //            println!("{:?}", command);
         }
     }
-
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-        let command_event_channel: EventChannel<CommandEvent> = EventChannel::new();
-        world.insert(command_event_channel);
-
-        // incoming input events
-        self.key_reader = Some(world.fetch_mut::<EventChannel<Key>>().register_reader());
-    }
 }
 
 pub struct InputListener;
 
 #[derive(SystemData)]
 pub struct InputListenerSystemData<'a> {
-    pub key_channel: Write<'a, EventChannel<Key>>,
+    pub key_channel: WriteExpect<'a, EventChannel<Key>>,
+    pub key_reader: WriteExpect<'a, ReaderId<Key>>,
     pub console: ReadExpect<'a, Root>,
 }
 

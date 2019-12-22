@@ -11,6 +11,7 @@ use crate::MessageLog;
 use thinking::Thinking;
 use types::monster::*;
 use types::AiType;
+use crate::ecs::State;
 
 // use std::sync::{Arc, Mutex};
 
@@ -48,10 +49,6 @@ impl<'a> System<'a> for Ai {
     type SystemData = AiSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        if data.game_state.player_turn {
-            return;
-        }
-
         // we need to get the commands from all actors, stuff it in here, and then process it later.
         // the reason there are two loops is because we need to keep data immutable in the first one,
         // but we need to mutably access it to update the actors' remaining moves, so the second one

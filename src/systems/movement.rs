@@ -186,16 +186,10 @@ impl<'a> System<'a> for Movement {
                 let (dx, dy) = (move_event.dest_x, move_event.dest_y);
 
                 // remove collider from previous position
-                match data.entity_map.actors.reset_point(x, y) {
-                    Ok(_) => (),
-                    Err(e) => println!("{}", e),
-                }
+                data.entity_map.actors.reset_point(x, y);
                 view.set(x, y, true, true);
 
-                match data.entity_map.actors.set_point(dx, dy, Some(ent)) {
-                    Ok(_) => (),
-                    Err(e) => println!("{}", e),
-                }
+                data.entity_map.actors.set_point(dx, dy, Some(ent));
                 view.set(dx, dy, true, false);
 
                 if let Err(err) = data.action_results.insert(ent, ActionResult::from(cost)) {
@@ -252,10 +246,7 @@ impl<'a> System<'a> for CollisionMapUpdater {
             }
 
             if let Some(_actor) = data.actors.get(ent) {
-                match map.actors.set_point(pos.x, pos.y, Some(ent)) {
-                    Ok(_) => (),
-                    Err(e) => println!("{}", e),
-                }
+                map.actors.set_point(pos.x, pos.y, Some(ent));
                 view.block_map.items[id].blocks_movement = true
             }
         }

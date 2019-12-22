@@ -4,7 +4,7 @@
     )),
 
     random_renderable: Some((
-        glyphs: "MN",
+        glyphs: "#",
         fg_colors: [(140, 120, 120)],
         bg_colors: Some([(90, 70, 80),(90, 80, 70),(90, 80, 90)]),
     )),

@@ -14,7 +14,7 @@
     )),
 
     renderable: Some((
-        glyph: '!',
+        glyph: 'O',
         fg_color: (255,255,255),
         bg_color: None,
     )),
