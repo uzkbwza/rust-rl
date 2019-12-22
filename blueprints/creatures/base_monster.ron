@@ -1,0 +1,11 @@
+(
+    extends: Some("creatures.base_creature"),
+
+    name: Some((
+        name: "BaseMonster"
+    )),
+
+    ai_control: Some((
+        ai_type: Monster
+    )),
+)
